@@ -1,0 +1,48 @@
+{
+  "test_configuration": {
+    "timestamp": 35441.645014488,
+    "execution_time_seconds": 1.6248950410008547,
+    "request_parameters": {
+      "folder_name": "dark_fortress_raid_rise_of_kingdoms",
+      "game_code": "Rise of Kingdoms",
+      "event_name": "Dark Fortress Raid",
+      "about": "\n# About Dark Fortress Raid\n\nThe call to battle has sounded! Rally your alliance, raid Dark Fortresses, and crush the Shadow Legion!\n\n## Overview\nRally your allies, raid Dark Fortresses, earn amazing rewards!\n\n## How to Play\nThis event is divided into 3 stages:\n\n**Stage 1:** Alliance members can earn Raid Coins by defeating Barbarian Troops on the map. These Raid Coins can be donated via the event page to increase your alliance's damage to the Dark Fortresses.\n\n**Stage 2:** Your alliance leader or a titled officer can select a time and location for your Raid. After summoning up to 3 Dark Fortresses, your alliance can start the Raid.\n\n**Stage 3:** Create rallied armies to attack the Dark Fortresses you summoned.\n\n## Rewards\n1. You can earn personal and alliance rewards from this event. Personal rewards are based on how much damage you personally dealt during the Raid, alliance rewards are based on how much damage your alliance dealt in total.\n\n2. The alliance member who deals the highest total damage in the Raid will be the MVP. Depending on how much damage the MVP deals, your alliance rewards can be multiplied by up to 10!\n\n## Important Notes\n1. Each alliance can only launch 1 Raid per event, though during the Raid you can attack the same Dark Fortress multiple times.\n\n2. Once your alliance leader or a titled officer sets the Raid time, they can summon a Dark Fortress to the kingdom or Lost Kingdom map (depending on which map they're currently on). Dark Fortresses cannot be relocated after they're summoned, and all other Dark Fortresses your alliance summons must be summoned to the same map.\n\n3. Each Dark Fortress can be attacked by up to 8 rallied armies at a time.\n\n4. You can only receive rewards from this event once per event. If you deal 0 damage during a Raid, you will not receive any personal or alliance rewards. You'll still be able to earn rewards, however, by taking part in this event with a different alliance.\n\n5. Your Raid time cannot be modified within 5 minutes of the start of the Raid.\n\n6. You cannot start a Raid in the last 60 minutes of the event.\n\n7. At the end of the event, unused Raid Coins will be converted into personal points.\n\n8. You can only attack Dark Fortresses summoned by your own alliance.\n",
+      "image_count": 3,
+      "shared_uploads_path": "/media/luanpc/Video/shared/uploads/"
+    },
+    "config": {
+      "event_name": "Dark Fortress Raid",
+      "game_code": "Rise of Kingdoms",
+      "folder_name": "dark_fortress_raid_rise_of_kingdoms",
+      "expected_image_count": 3
+    }
+  },
+  "results": {
+    "query_event": {
+      "name": "Dark Fortress Raid",
+      "about": "\n# About Dark Fortress Raid\n\nThe call to battle has sounded! Rally your alliance, raid Dark Fortresses, and crush the Shadow Legion!\n\n## Overview\nRally your allies, raid Dark Fortresses, earn amazing rewards!\n\n## How to Play\nThis event is divided into 3 stages:\n\n**Stage 1:** Alliance members can earn Raid Coins by defeating Barbarian Troops on the map. These Raid Coins can be donated via the event page to increase your alliance's damage to the Dark Fortresses.\n\n**Stage 2:** Your alliance leader or a titled officer can select a time and location for your Raid. After summoning up to 3 Dark Fortresses, your alliance can start the Raid.\n\n**Stage 3:** Create rallied armies to attack the Dark Fortresses you summoned.\n\n## Rewards\n1. You can earn personal and alliance rewards from this event. Personal rewards are based on how much damage you personally dealt during the Raid, alliance rewards are based on how much damage your alliance dealt in total.\n\n2. The alliance member who deals the highest total damage in the Raid will be the MVP. Depending on how much damage the MVP deals, your alliance rewards can be multiplied by up to 10!\n\n## Important Notes\n1. Each alliance can only launch 1 Raid per event, though during the Raid you can attack the same Dark Fortress multiple times.\n\n2. Once your alliance leader or a titled officer sets the Raid time, they can summon a Dark Fortress to the kingdom or Lost Kingdom map (depending on which map they're currently on). Dark Fortresses cannot be relocated after they're summoned, and all other Dark Fortresses your alliance summons must be summoned to the same map.\n\n3. Each Dark Fortress can be attacked by up to 8 rallied armies at a time.\n\n4. You can only receive rewards from this event once per event. If you deal 0 damage during a Raid, you will not receive any personal or alliance rewards. You'll still be able to earn rewards, however, by taking part in this event with a different alliance.\n\n5. Your Raid time cannot be modified within 5 minutes of the start of the Raid.\n\n6. You cannot start a Raid in the last 60 minutes of the event.\n\n7. At the end of the event, unused Raid Coins will be converted into personal points.\n\n8. You can only attack Dark Fortresses summoned by your own alliance.\n",
+      "tags": {
+        "family": "Other",
+        "dynamics": "Individualistic",
+        "rewards": "None"
+      },
+      "tag_explanation": "Phase-separated analysis - query event taxonomy not analyzed"
+    },
+    "similar_events": [
+      {
+        "name": "The Lost Kingdom: Heroic Anthem - Rise of Kingdoms",
+        "about": "",
+        "score_text": 0.0,
+        "score_image_max": 0.0,
+        "score_image_avg": 0.0,
+        "reason": "Found by visual similarity (max: 0.000, avg: 0.000)",
+        "tags": {
+          "family": "Other",
+          "dynamics": "Individualistic",
+          "rewards": "None"
+        },
+        "tag_explanation": "Image-found event - text analysis not performed"
+      }
+    ]
+  }
+}

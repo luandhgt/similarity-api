@@ -1,0 +1,67 @@
+# Event Similarity Output Formats Configuration
+
+formats:
+  default:
+    name: "Default Event Alternative Results"
+    description: "Standard event alternative analysis results"
+    template: |
+      {
+        "query_event": {query_event},
+        "similar_events": {similar_events},
+        "analysis_metadata": {
+          "total_candidates": {total_candidates},
+          "processed_at": "{timestamp}"
+        }
+      }
+
+  detailed_json:
+    name: "Detailed Event Alternative Results"
+    description: "Comprehensive alternative analysis with full metadata"
+    template: |
+      {
+        "query_event": {query_event},
+        "similar_events": {similar_events},
+        "analysis_stats": {
+          "total_candidates": {total_candidates},
+          "candidates_with_text_scores": {text_score_count},
+          "candidates_with_image_scores": {image_score_count},
+          "average_text_score": {avg_text_score},
+          "average_image_score": {avg_image_score}
+        },
+        "search_metadata": {
+          "query_game": "{game_code}",
+          "processed_at": "{timestamp}",
+          "analysis_version": "1.0"
+        }
+      }
+
+  summary:
+    name: "Summary Alternative Results"
+    description: "Top alternative events with key metrics"
+    template: |
+      {
+        "query_name": "{query_name}",
+        "top_alternatives": {top_similar_events},
+        "summary": {
+          "total_found": {total_candidates},
+          "high_confidence_matches": {high_confidence_count},
+          "best_text_match_score": {best_text_score},
+          "best_image_match_score": {best_image_score}
+        }
+      }
+
+  simple:
+    name: "Simple Alternative Results"
+    description: "Minimal results for quick integration"
+    template: |
+      {
+        "alternatives": {simple_events_list},
+        "count": {total_candidates}
+      }
+
+settings:
+  default_format: "default"
+  max_results_per_type: 20
+  similarity_threshold: 0.3
+  include_scores: true
+  include_reasoning: true

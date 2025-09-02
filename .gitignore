@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+*.log
+.env.*
+.DS_Store
+*.tmp
+*.cache
+__pycache__/
+.vscode/
+.idea/
+images/
+.env
+.env.*
+models/*.pth.tar
+models/*.pth
+*.tar

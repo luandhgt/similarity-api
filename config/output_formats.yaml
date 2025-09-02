@@ -1,0 +1,72 @@
+default:
+  type: "raw_text"
+  description: "Plain text output - just the about content"
+
+json_detailed:
+  type: "json"
+  description: "Detailed JSON with metadata"
+  schema:
+    about_content: "The main about text content"
+    metadata:
+      word_count: "Number of words in content"
+      image_count: "Number of images processed"
+      processing_time: "Time taken to process"
+      ocr_confidence: "Overall OCR confidence level"
+    sections:
+      - title: "Section title if detectable"
+        content: "Section content"
+        source_images: "Images this section came from"
+
+json_simple:
+  type: "json"
+  description: "Simple JSON format"
+  schema:
+    about_content: "The main about text content"
+    word_count: "Number of words"
+    status: "processing status"
+
+markdown:
+  type: "markdown"
+  description: "Markdown formatted output"
+  template: |
+    # About {event_name}
+    
+    **Event Type:** {event_type}  
+    **Game/Platform:** {game_code}  
+    **Processed:** {timestamp}
+    
+    ---
+    
+    {about_content}
+    
+    ---
+    *Generated from {image_count} images via OCR + AI synthesis*
+
+html:
+  type: "html"
+  description: "HTML formatted output"
+  template: |
+    <div class="event-about">
+      <h2>About {event_name}</h2>
+      <div class="meta-info">
+        <span class="event-type">{event_type}</span>
+        <span class="game-code">{game_code}</span>
+      </div>
+      <div class="content">
+        {about_content}
+      </div>
+      <div class="footer">
+        <small>Generated from {image_count} images</small>
+      </div>
+    </div>
+
+# Custom formats can be added here
+custom_summary:
+  type: "json"
+  description: "Custom summary format for specific use cases"
+  schema:
+    title: "Event title"
+    summary: "Brief summary (max 200 words)"
+    full_content: "Complete about content"
+    key_points: "Array of key highlights"
+    generated_at: "Timestamp"

@@ -1,0 +1,5 @@
+conda activate image-similarity-api
+
+
+
+về input ảnh thì tôi muốn search nhiều ảnh 1 lúc có lẽ trả về nên là separate results cho mỗi ảnh ( hãy cho tôi 1 ví dụ chỗ này nhé) B với top K thì hãy cho tôi 1 config đi về threshold thì tôi nghĩ cũng tương tự có config ( nói luôn ở đây thử ra đây là 2 project hoạc 1 project nhưng viết theo kiểu microservices. một project chạy node có nhiệm. vụ track event game mỗi ngày. chính project node này sẽ input anh đầu vào để search ảnh vaf tìm event tương đồng, khi project này search cũng trả về cho project kia) ko cần trả về đường dẫn ảnh chỉ cần trả về index vì metadata ảnh và index ở bên faiss này đã được map với 1 database postgresl bên project node bên kia rồi C nếu search batch thì có lợi gì và hại gì vụ cache thì tôi nhớ chính bạn bảo rằng faiss luôn load toàn bộ file vào ram khi search mà
