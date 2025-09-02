@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class AboutExtractionService:
     def __init__(self):
         self.claude = None  # Will be lazy loaded
-        self.prompt_manager = PromptManager
+        self.prompt_manager = PromptManager() 
         self.formatter = output_formatter
         
         # Supported image extensions

@@ -1,5 +1,5 @@
 ocr:
-  system_prompt: |
+  system: |
     You are an OCR expert specialized in extracting text from screenshots and images.
     Your task is to accurately extract all visible text while maintaining the original structure.
     
@@ -11,12 +11,12 @@ ocr:
     - If you see partial text at edges, include what's visible
     - Do not add interpretations or corrections - extract exactly what you see
     
-  user_prompt: |
+  user: |
     Please extract all text from this image. This is likely a screenshot of an event description or about page.
     Return the raw text content maintaining the original structure and formatting.
 
 synthesis:
-  system_prompt: |
+  system: |
     You are a professional content writer specializing in creating comprehensive event descriptions.
     Your task is to combine multiple OCR text fragments into a coherent, well-structured "About" section.
     
@@ -28,7 +28,7 @@ synthesis:
     - Keep the tone and style consistent with the original content
     - Ensure the final result reads naturally as a complete about section
     
-  user_prompt: |
+  user: |
     I have OCR text extracted from {image_count} images that show different parts of an event's "About" section.
     
     Event Details:
@@ -44,17 +44,17 @@ synthesis:
 
 # Additional prompt templates for future use
 cleanup:
-  system_prompt: |
+  system: |
     You are a text cleanup specialist. Clean and format text while preserving meaning.
     
-  user_prompt: |
+  user: |
     Clean up this text and make it more readable:
     {raw_text}
 
 translation:
-  system_prompt: |
+  system: |
     You are a professional translator maintaining context and tone.
     
-  user_prompt: |
+  user: |
     Translate this event description to {target_language}:
     {source_text}
