@@ -337,32 +337,3 @@ async def validate_request(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Validation error: {str(e)}"
         )
-
-# Global exception handlers for this router
-@router.exception_handler(HTTPException)
-async def http_exception_handler(request, exc):
-    """Handle HTTP exceptions with proper error response format"""
-    return {
-        "error": "HTTPException",
-        "message": exc.detail,
-        "status_code": exc.status_code
-    }
-
-@router.exception_handler(ValueError)
-async def value_error_handler(request, exc):
-    """Handle validation errors"""
-    return {
-        "error": "ValidationError",
-        "message": str(exc),
-        "status_code": 400
-    }
-
-@router.exception_handler(Exception)
-async def general_exception_handler(request, exc):
-    """Handle general exceptions"""
-    logger.error(f"Unhandled exception in event similarity router: {exc}")
-    return {
-        "error": "InternalServerError",
-        "message": "An unexpected error occurred",
-        "status_code": 500
-    }

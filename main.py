@@ -11,7 +11,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import time
 from contextlib import asynccontextmanager
@@ -303,6 +303,27 @@ async def global_exception_handler(request, exc):
         "message": "An unexpected error occurred",
         "status_code": 500
     }
+
+
+# Global exception handlers for this router
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    """Handle HTTP exceptions with proper error response format"""
+    return {
+        "error": "HTTPException",
+        "message": exc.detail,
+        "status_code": exc.status_code
+    }
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request, exc):
+    """Handle validation errors"""
+    return {
+        "error": "ValidationError",
+        "message": str(exc),
+        "status_code": 400
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
