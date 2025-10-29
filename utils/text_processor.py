@@ -96,6 +96,9 @@ def preprocess_text(text: str) -> str:
     text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)  # Remove bold
     text = re.sub(r'\n+', ' ', text)  # Replace newlines with spaces
     text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+
+    # Lowercase
+    text = text.lower()
     
     return text
 

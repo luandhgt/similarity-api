@@ -252,7 +252,6 @@ def get_vector_by_index(faiss_index: int, content_type: str, game_code: str) -> 
         print(f"Error retrieving vector at index {faiss_index}: {e}")
         return None
 
-
 def get_faiss_stats(game_name: str = None, content_type: str = None) -> Dict[str, Any]:
     """
     Get FAISS index statistics
@@ -340,6 +339,18 @@ def cleanup_faiss():
     
     print("✅ FAISS cleanup completed")
 
+def update_vector_in_faiss(faiss_index: int, new_vector: np.ndarray, 
+                          game_code: str, content_type: str):
+    # Remove old vector
+    remove_vector_from_faiss(faiss_index, game_code, content_type)
+    # Add new vector (sẽ có index mới)
+    return add_vector_to_faiss(new_vector, game_code, content_type)
+
+def remove_vector_from_faiss(faiss_index: int, game_code: str, content_type: str):
+    index = load_faiss_index(game_code, content_type)
+    ids_to_remove = np.array([faiss_index])
+    index.remove_ids(ids_to_remove)
+    save_faiss_index(game_code, content_type)
 
 def list_available_games() -> Dict[str, list]:
     """
