@@ -1,7 +1,6 @@
 """
 Claude Service - Handle all Claude API interactions for OCR and text synthesis
 """
-import os
 import base64
 import asyncio
 from typing import List, Dict, Any, Optional
@@ -9,24 +8,18 @@ import logging
 from pathlib import Path
 import aiohttp
 import json
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from config import config
 
 logger = logging.getLogger(__name__)
 
 class ClaudeService:
     def __init__(self):
-        # Load environment variables first
-        load_dotenv()
-        
-        self.api_key = os.getenv("CLAUDE_API_KEY")
-        self.model = "claude-sonnet-4-20250514"
+        self.api_key = config.CLAUDE_API_KEY
+        self.model = config.CLAUDE_MODEL
         self.base_url = "https://api.anthropic.com/v1"
-        self.max_tokens = 4000
-        self.timeout = 300  # seconds
-        
+        self.max_tokens = config.CLAUDE_MAX_TOKENS
+        self.timeout = config.CLAUDE_TIMEOUT
+
         if not self.api_key:
             logger.warning("⚠️ CLAUDE_API_KEY not found in environment variables")
             logger.warning("⚠️ Claude service will not be functional until API key is provided")

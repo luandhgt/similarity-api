@@ -1,8 +1,6 @@
 node_modules/
 dist/
 build/
-*.log
-.env.*
 .DS_Store
 *.tmp
 *.cache
@@ -10,8 +8,31 @@ __pycache__/
 .vscode/
 .idea/
 images/
+
+# Environment files - keep example but ignore actual configs
 .env
-.env.*
+.env.development
+.env.production
+.env.ubuntu
+.env.windows
+!.env.example
+
+# Model files
 models/*.pth.tar
 models/*.pth
 *.tar
+
+# Index files
+index/
+index-bak/
+
+# Logs
+logs/
+*.log
+
+# Test results
+test_results.json
+
+# Backup files
+*.bak
+*.zip

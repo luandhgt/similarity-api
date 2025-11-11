@@ -5,26 +5,20 @@ Handles PostgreSQL database connections and queries for event similarity search.
 """
 
 import logging
-import os
 from typing import List, Dict, Any, Optional
 import asyncpg
 from datetime import datetime
+from config import config
 
 logger = logging.getLogger(__name__)
 
 
 class DatabaseService:
     """Service for handling PostgreSQL database operations"""
-    
+
     def __init__(self):
         self.pool = None
-        self.db_config = {
-            'host': os.getenv('DB_HOST', 'localhost'),
-            'port': int(os.getenv('DB_PORT', 5432)),
-            'user': os.getenv('DB_USER'),
-            'password': os.getenv('DB_PASS'),
-            'database': os.getenv('DB_NAME')
-        }
+        self.db_config = config.get_db_config()
     
     async def initialize(self) -> bool:
         """Initialize PostgreSQL connection pool"""
