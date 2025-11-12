@@ -190,16 +190,22 @@ class AboutExtractionService:
                                       event_type: str,
                                       game_code: str) -> str:
         """
-        Synthesize about content from OCR results
-        
+        Synthesize about content from OCR results (v2.0 workflow)
+
+        This method uses the new workflow that sends both images and OCR texts
+        to Claude, allowing it to perform visual analysis for classification.
+
         Args:
             ocr_results: List of successful OCR results
             event_name: Event name
             event_type: Event type
             game_code: Game code
-            
+
         Returns:
-            Synthesized about content
+            Synthesized bilingual about content with classification tags
+
+        Raises:
+            Exception: If no valid OCR text found or synthesis fails
         """
         # Prepare OCR texts for synthesis
         ocr_texts_formatted = []
@@ -208,13 +214,13 @@ class AboutExtractionService:
             text = result["text"].strip()
             if text:
                 ocr_texts_formatted.append(f"Image {i} ({image_name}):\n{text}")
-        
+
         if not ocr_texts_formatted:
             raise Exception("No valid OCR text found for synthesis")
-        
+
         # Combine all OCR texts
         combined_ocr_text = "\n\n---\n\n".join(ocr_texts_formatted)
-        
+
         # Get synthesis prompts with substitution
         synthesis_prompts = self.prompt_manager.get_synthesis_prompts(
             event_name=event_name,
@@ -223,16 +229,21 @@ class AboutExtractionService:
             image_count=len(ocr_results),
             ocr_texts=combined_ocr_text
         )
-        
-        logger.info(f"🔄 Synthesizing content from {len(ocr_results)} OCR results")
-        
-        # Synthesize content
-        about_content = await self._get_claude_service().synthesize_content(
-            ocr_texts=[result["text"] for result in ocr_results],
+
+        logger.info(f"🔄 Synthesizing content from {len(ocr_results)} OCR results (v2.0 with images)")
+
+        # Extract image paths and texts
+        image_paths = [result["image_path"] for result in ocr_results]
+        ocr_texts = [result["text"] for result in ocr_results]
+
+        # Use new v2.0 workflow: Send both images and OCR texts
+        about_content = await self._get_claude_service().synthesize_with_images_and_texts(
+            image_paths=image_paths,
+            ocr_texts=ocr_texts,
             system_prompt=synthesis_prompts["system"],
             user_prompt=synthesis_prompts["user"]
         )
-        
+
         return about_content.strip()
     
     def get_supported_formats(self) -> List[str]:

@@ -2,6 +2,11 @@
 # Defines output formats for event about generation
 
 formats:
+  # Default format (raw text - backward compatibility)
+  default:
+    type: "raw_text"
+    description: "Raw text output - returns Claude's response as-is without formatting"
+
   # Main format: Bilingual plain text for textarea
   bilingual_text:
     type: "plain_text"

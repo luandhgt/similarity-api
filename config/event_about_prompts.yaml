@@ -202,3 +202,95 @@ ocr_simple:
 
   user: |
     Extract all text from this event screenshot, maintaining the original structure.
+
+# Simple OCR prompt (alias for backward compatibility)
+ocr:
+  system: |
+    You are an OCR expert specialized in extracting text from screenshots and images.
+    Your task is to accurately extract all visible text while maintaining the original structure.
+
+    Rules:
+    - Extract ALL visible text, including headers, body text, captions, and any other readable content
+    - Preserve line breaks and paragraph structure as much as possible
+    - If text appears in columns, maintain the column structure
+    - Include any visible numbers, dates, or special formatting
+    - If you see partial text at edges, include what's visible
+    - Do not add interpretations or corrections - extract exactly what you see
+
+  user: |
+    Please extract all text from this image. This is likely a screenshot of an event description or about page.
+    Return the raw text content maintaining the original structure and formatting.
+
+# Synthesis prompt (alias for backward compatibility with v1.x)
+synthesis:
+  system: |
+    You are a professional bilingual content writer (English/Vietnamese) specializing in game event documentation.
+
+    Your task is to create a comprehensive, well-structured event "About" section in BOTH English and Vietnamese.
+
+    Guidelines:
+    - Synthesize all information from the analysis into a coherent narrative
+    - Use clear, professional language suitable for a game industry database
+    - Structure information logically (overview → mechanics → rewards → details)
+    - Highlight key classification elements (type, mechanics, dynamics, rewards)
+    - Include all important details (duration, costs, requirements, etc.)
+    - Make it easy to identify tags for cataloging and re-release tracking
+    - Vietnamese translation should be natural, not literal word-for-word
+    - Use game industry terminology appropriately in both languages
+
+  user: |
+    Based on the extracted text from {image_count} event screenshots, create a comprehensive bilingual "About" section.
+
+    Extracted Text:
+    {ocr_texts}
+
+    Event Context:
+    - Event Name: {event_name}
+    - Event Type: {event_type}
+    - Game: {game_code}
+
+    Create the output in the following format:
+
+    [ENGLISH]
+    Event Name: [Name]
+    Type: [Feature/Season/Event/Content]
+    Mechanic: [Primary mechanic family]
+    Player Dynamics: [Collaborative/Individualistic/Competitive/Mixed]
+    Reward System: [System type]
+    Reward Types: [Currency/Items/Real prizes/Mixed]
+    Duration: [Time period if applicable]
+    Cost: [Free/Paid/Mixed - with details]
+
+    Description:
+    [Comprehensive description of the event - 3-5 paragraphs covering:
+     - Overview and theme
+     - How it works (mechanics and gameplay)
+     - Reward structure and progression
+     - Special features or unique elements
+     - Any notable details for classification]
+
+    ================
+
+    [TIẾNG VIỆT]
+    Tên sự kiện: [Tên]
+    Loại: [Feature/Season/Event/Content]
+    Cơ chế: [Cơ chế chính]
+    Động lực người chơi: [Hợp tác/Cá nhân/Cạnh tranh/Hỗn hợp]
+    Hệ thống thưởng: [Loại hệ thống]
+    Loại thưởng: [Tiền tệ/Vật phẩm/Giải thật/Hỗn hợp]
+    Thời gian: [Khoảng thời gian nếu có]
+    Chi phí: [Miễn phí/Trả phí/Hỗn hợp - chi tiết]
+
+    Mô tả:
+    [Mô tả toàn diện về sự kiện - 3-5 đoạn bao gồm:
+     - Tổng quan và chủ đề
+     - Cách hoạt động (cơ chế và gameplay)
+     - Cấu trúc phần thưởng và tiến trình
+     - Tính năng đặc biệt hoặc yếu tố độc đáo
+     - Các chi tiết đáng chú ý cho việc phân loại]
+
+    Important:
+    - Keep both language sections complete and equivalent in information
+    - Use the separator line "================" between English and Vietnamese sections
+    - Be specific and detailed - this will be used for event database and re-release tracking
+    - Ensure all classification elements are clearly stated for easy tagging

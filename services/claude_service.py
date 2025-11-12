@@ -199,20 +199,23 @@ class ClaudeService:
             logger.error(f"❌ OCR failed for {image_path}: {e}")
             raise
     
-    async def synthesize_content(self, 
+    async def synthesize_content(self,
                                ocr_texts: List[str],
                                system_prompt: str = "",
                                user_prompt: str = "") -> str:
         """
         Synthesize multiple OCR texts into coherent content
-        
+
         Args:
             ocr_texts: List of OCR extracted texts
             system_prompt: System prompt for synthesis
             user_prompt: User prompt with placeholders filled
-            
+
         Returns:
             Synthesized content
+
+        Raises:
+            Exception: If synthesis fails
         """
         try:
             # Prepare messages
@@ -220,17 +223,95 @@ class ClaudeService:
                 "role": "user",
                 "content": user_prompt
             }]
-            
+
             # Make API request
             response = await self._make_request_with_messages(messages, system_prompt)
-            
+
             logger.info(f"✅ Content synthesis completed (output: {len(response)} characters)")
             return response
-            
+
         except Exception as e:
             logger.error(f"❌ Content synthesis failed: {e}")
             raise
-    
+
+    async def synthesize_with_images_and_texts(self,
+                                              image_paths: List[str],
+                                              ocr_texts: List[str],
+                                              system_prompt: str = "",
+                                              user_prompt: str = "") -> str:
+        """
+        Synthesize content from both images and OCR texts (v2.0 workflow)
+
+        This method sends BOTH the actual images and their OCR texts to Claude,
+        allowing it to perform visual analysis alongside text analysis for:
+        - UI/layout analysis from screenshots
+        - Icon and visual element recognition
+        - Mechanic classification from gameplay images
+        - Reward system identification from visual cues
+        - Player dynamics understanding from UI design
+
+        Args:
+            image_paths: List of image file paths to analyze
+            ocr_texts: List of OCR extracted texts corresponding to images
+            system_prompt: System prompt for analysis/synthesis
+            user_prompt: User prompt with context and instructions
+
+        Returns:
+            Synthesized bilingual content with classification tags
+
+        Raises:
+            Exception: If image encoding or API request fails
+        """
+        try:
+            logger.info(f"🔄 Synthesizing with {len(image_paths)} images + OCR texts...")
+
+            # Build content array with alternating images and texts
+            content_blocks = []
+
+            # Add all images with their OCR texts
+            for i, (image_path, ocr_text) in enumerate(zip(image_paths, ocr_texts), 1):
+                # Add image
+                image_base64 = self._encode_image(image_path)
+                media_type = self._get_image_media_type(image_path)
+
+                content_blocks.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": image_base64
+                    }
+                })
+
+                # Add OCR text context for this image
+                if ocr_text:
+                    content_blocks.append({
+                        "type": "text",
+                        "text": f"[Image {i} extracted text]:\n{ocr_text}\n"
+                    })
+
+            # Add the main user prompt at the end
+            content_blocks.append({
+                "type": "text",
+                "text": user_prompt
+            })
+
+            # Prepare message
+            messages = [{
+                "role": "user",
+                "content": content_blocks
+            }]
+
+            # Make API request
+            response = await self._make_request_with_messages(messages, system_prompt)
+
+            logger.info(f"✅ Image+Text synthesis completed (output: {len(response)} characters)")
+            return response
+
+        except Exception as e:
+            logger.error(f"❌ Image+Text synthesis failed: {e}")
+            raise
+
     async def process_multiple_images(self, 
                                     image_paths: List[str],
                                     system_prompt: str = "",
