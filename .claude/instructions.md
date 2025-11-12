@@ -59,34 +59,98 @@ This codebase follows SOLID principles and clean architecture:
 ### Directory Structure
 ```
 image-similarity-api/
-├── core/                   # Framework (exceptions, container, factory)
-│   ├── exceptions.py       # Custom exception classes
-│   ├── container.py        # ServiceContainer (singleton DI)
-│   └── service_factory.py  # Service creation logic
-├── models/                 # DTOs and data models
-│   ├── dtos.py            # Data Transfer Objects (Pydantic)
-│   ├── responses.py       # API response models
-│   └── places365.py       # Places365 CNN model
+├── .claude/               # Claude Code configuration
+│   ├── instructions.md    # Coding standards & patterns
+│   └── project-guidelines.md  # Development guidelines
+│
+├── core/                  # Framework (exceptions, container, factory)
+│   ├── __init__.py
+│   ├── exceptions.py      # Custom exception classes
+│   ├── container.py       # ServiceContainer (singleton DI)
+│   └── service_factory.py # Service creation logic
+│
+├── models/                # DTOs and data models
+│   ├── __init__.py
+│   ├── dtos.py           # Data Transfer Objects (Pydantic)
+│   ├── responses.py      # API response models
+│   ├── places365.py      # Places365 CNN model
+│   └── resnet50_places365.pth.tar  # Pre-trained model weights
+│
 ├── repositories/          # Data access layer
+│   ├── __init__.py
 │   └── event_repository.py # PostgreSQL operations
+│
 ├── services/              # Business logic
 │   ├── about_extraction_service.py  # Extract event info from images
 │   ├── event_similarity_service.py  # Find similar events
 │   ├── claude_service.py            # Claude AI integration
 │   └── database_service.py          # Database operations
+│
 ├── utils/                 # Utilities
 │   ├── validators.py      # Request validation
-│   ├── image_utils.py     # Image processing
-│   ├── text_processor.py  # Text embeddings
-│   └── faiss_manager.py   # FAISS index management
+│   ├── image_utils.py     # Image utilities
+│   ├── image_processor.py # Image preprocessing
+│   ├── text_processor.py  # Text embeddings (Voyage)
+│   ├── faiss_manager.py   # FAISS index management
+│   ├── prompt_manager.py  # Prompt templates manager
+│   └── output_formatter.py # Output formatting
+│
 ├── routers/               # API endpoints (FastAPI)
 │   ├── about_extraction.py
 │   ├── event_similarity.py
 │   └── similarity.py
+│
 ├── tests/                 # Unit & integration tests
+│   ├── __init__.py
+│   ├── conftest.py        # Pytest fixtures
+│   ├── test_config.py     # Test configuration
+│   ├── service_initializer.py  # Service setup for tests
+│   ├── test_runner.py     # Test execution
+│   ├── test_reporter.py   # Results reporting
+│   └── unit/              # Unit tests
+│       ├── __init__.py
+│       ├── test_validators.py
+│       ├── test_container.py
+│       └── test_dtos.py
+│
+├── config/                # Configuration files
+│   ├── prompts.yaml       # Prompt templates
+│   ├── output_formats.yaml
+│   ├── similarity_prompts.yaml
+│   └── similarity_output_formats.yaml
+│
+├── docs/                  # Documentation
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── SETUP.md
+│   ├── MIGRATION.md
+│   ├── README_REFACTOR.md
+│   ├── REFACTORING_COMPLETE.md
+│   ├── CODE_ANALYSIS.md
+│   └── CHANGELOG_REFACTOR.md
+│
+├── index/                 # FAISS indices (generated)
+│   ├── about/
+│   ├── images/
+│   └── name/
+│
+├── logs/                  # Log files (generated)
+│
 ├── test_workflow.py       # Development workflow test runner
 ├── main.py                # Production FastAPI application
-└── config.py              # Configuration management
+├── config.py              # Configuration management
+├── setup_model.py         # Download Places365 model
+│
+├── .env.example           # Environment template
+├── .env.development       # Dev environment
+├── .env.production        # Prod environment
+├── .env.ubuntu            # Ubuntu-specific
+├── .env.windows           # Windows-specific
+├── setup_env.sh           # Environment setup (Linux)
+├── setup_env.bat          # Environment setup (Windows)
+├── requirements.txt       # Python dependencies
+├── pytest.ini             # Pytest configuration
+└── .gitignore             # Git ignore rules
 ```
 
 **Important Files:**
