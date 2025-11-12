@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Event Similarity Analysis - Standalone Test Runner
+Event Similarity Analysis - Workflow Test Runner
 
-Refactored version using modular architecture.
-Configure the test in tests/test_config.py and run to test the complete workflow.
+Tests the complete event similarity workflow using refactored v2.0 architecture.
+This is a development tool for validating the entire pipeline end-to-end.
+
+Usage:
+    python test_workflow.py
+
+Configure test parameters in: tests/test_config.py
 """
 
 import sys

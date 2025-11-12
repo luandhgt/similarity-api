@@ -16,8 +16,8 @@ Multi-modal event similarity search API using Places365, FAISS, Claude AI, and V
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Run tests
-python main_new.py
+# 3. Test workflow (optional)
+python test_workflow.py
 
 # 4. Start API
 uvicorn main:app --reload
