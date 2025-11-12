@@ -1,0 +1,268 @@
+# Event About Output Templates
+# Defines output formats for event about generation
+
+formats:
+  # Main format: Bilingual plain text for textarea
+  bilingual_text:
+    type: "plain_text"
+    description: "Bilingual (EN/VI) plain text format for web textarea - default format"
+    template: |
+      [ENGLISH]
+      Event Name: {event_name_en}
+      Type: {release_type}
+      Mechanic: {mechanic_family}
+      Player Dynamics: {player_dynamics}
+      Reward System: {reward_system}
+      Reward Types: {reward_types}
+      Duration: {duration}
+      Cost: {cost}
+
+      Description:
+      {description_en}
+
+      ================
+
+      [TIẾNG VIỆT]
+      Tên sự kiện: {event_name_vi}
+      Loại: {release_type_vi}
+      Cơ chế: {mechanic_family_vi}
+      Động lực người chơi: {player_dynamics_vi}
+      Hệ thống thưởng: {reward_system_vi}
+      Loại thưởng: {reward_types_vi}
+      Thời gian: {duration_vi}
+      Chi phí: {cost_vi}
+
+      Mô tả:
+      {description_vi}
+
+    schema:
+      event_name_en: "Event name in English"
+      event_name_vi: "Tên sự kiện tiếng Việt"
+      release_type: "Feature/Season/Event/Content"
+      release_type_vi: "Feature/Season/Event/Content (Vietnamese)"
+      mechanic_family: "Primary mechanic (English)"
+      mechanic_family_vi: "Cơ chế chính (Vietnamese)"
+      player_dynamics: "Player dynamics classification (English)"
+      player_dynamics_vi: "Phân loại động lực người chơi (Vietnamese)"
+      reward_system: "Reward system type (English)"
+      reward_system_vi: "Loại hệ thống thưởng (Vietnamese)"
+      reward_types: "Types of rewards (English)"
+      reward_types_vi: "Các loại phần thưởng (Vietnamese)"
+      duration: "Event duration (English)"
+      duration_vi: "Thời gian sự kiện (Vietnamese)"
+      cost: "Cost information (English)"
+      cost_vi: "Thông tin chi phí (Vietnamese)"
+      description_en: "Full event description in English (3-5 paragraphs)"
+      description_vi: "Mô tả đầy đủ sự kiện bằng tiếng Việt (3-5 đoạn)"
+
+  # JSON format with full metadata
+  json_bilingual:
+    type: "json"
+    description: "Structured JSON with bilingual content and metadata"
+    template: |
+      {
+        "event_name": {
+          "en": "{event_name_en}",
+          "vi": "{event_name_vi}"
+        },
+        "classification": {
+          "release_type": "{release_type}",
+          "mechanic_family": "{mechanic_family}",
+          "player_dynamics": "{player_dynamics}",
+          "reward_system": "{reward_system}",
+          "reward_types": "{reward_types}"
+        },
+        "details": {
+          "duration": {
+            "en": "{duration}",
+            "vi": "{duration_vi}"
+          },
+          "cost": {
+            "en": "{cost}",
+            "vi": "{cost_vi}"
+          }
+        },
+        "description": {
+          "en": "{description_en}",
+          "vi": "{description_vi}"
+        },
+        "metadata": {
+          "image_count": {image_count},
+          "generated_at": "{timestamp}",
+          "game_code": "{game_code}"
+        },
+        "tags_suggested": {tags_array}
+      }
+
+    schema:
+      event_name: "Event name in both languages"
+      classification: "Event classification tags"
+      details: "Event details (duration, cost, etc.)"
+      description: "Full descriptions in both languages"
+      metadata: "Processing metadata"
+      tags_suggested: "Array of suggested tags for easy tagging"
+
+  # Compact format for database storage
+  compact_text:
+    type: "plain_text"
+    description: "Compact bilingual format without field labels"
+    template: |
+      {event_name_en} | {release_type} | {mechanic_family} | {player_dynamics} | {reward_system}
+
+      {description_en}
+
+      ================
+
+      {event_name_vi} | {release_type_vi} | {mechanic_family_vi} | {player_dynamics_vi} | {reward_system_vi}
+
+      {description_vi}
+
+  # Markdown format with rich formatting
+  markdown_bilingual:
+    type: "markdown"
+    description: "Markdown formatted bilingual output"
+    template: |
+      # {event_name_en}
+
+      ## Classification
+      - **Type:** {release_type}
+      - **Mechanic:** {mechanic_family}
+      - **Player Dynamics:** {player_dynamics}
+      - **Reward System:** {reward_system}
+      - **Reward Types:** {reward_types}
+      - **Duration:** {duration}
+      - **Cost:** {cost}
+
+      ## Description (English)
+
+      {description_en}
+
+      ---
+
+      # {event_name_vi}
+
+      ## Phân loại
+      - **Loại:** {release_type_vi}
+      - **Cơ chế:** {mechanic_family_vi}
+      - **Động lực người chơi:** {player_dynamics_vi}
+      - **Hệ thống thưởng:** {reward_system_vi}
+      - **Loại thưởng:** {reward_types_vi}
+      - **Thời gian:** {duration_vi}
+      - **Chi phí:** {cost_vi}
+
+      ## Mô tả (Tiếng Việt)
+
+      {description_vi}
+
+      ---
+      *Generated from {image_count} images | {game_code} | {timestamp}*
+
+# Default format to use if not specified
+default_format: "bilingual_text"
+
+# Field mapping for easy reference
+field_definitions:
+  release_type:
+    values: ["Feature", "Season", "Event", "Content"]
+    description: "Type of release based on permanence and run pattern"
+
+  mechanic_family:
+    values:
+      - "Accelerators"
+      - "Banks"
+      - "Bonuses"
+      - "Challenges"
+      - "Clubs"
+      - "Collections"
+      - "Competitions"
+      - "Cosmetics"
+      - "Currencies"
+      - "Custom Design"
+      - "Exchanges"
+      - "Expansions"
+      - "Flows"
+      - "Hazards"
+      - "Interactions"
+      - "Leaderboards"
+      - "Levels"
+      - "Mini-Games"
+      - "Missions"
+      - "Notices"
+      - "Other"
+      - "Profiles"
+      - "Purchases"
+      - "Quests"
+      - "Rewards"
+    description: "Primary mechanic driving the event"
+
+  player_dynamics:
+    values:
+      - "Collaborative"
+      - "Individualistic"
+      - "Collaborative & Competitive"
+      - "Individualistic & Competitive"
+      - "Collaborative & Individualistic"
+      - "Individual, Collaborative & Competitive"
+    description: "How players interact and compete"
+
+  reward_system:
+    values:
+      - "Linear or Exponential"
+      - "Milestones with prize"
+      - "Multi-singles"
+      - "None"
+      - "Prize only"
+      - "RNG (slot machine)"
+      - "Single"
+      - "Singles with prize"
+      - "Single with milestones"
+      - "Singles, milestones, and prize"
+    description: "How rewards are distributed"
+
+  reward_types:
+    values:
+      - "Currencies"
+      - "Items"
+      - "Real prize"
+      - "Currencies & items"
+      - "Currencies & real prize"
+      - "Items & real prize"
+      - "Currencies, items, & real prize"
+    description: "Types of rewards offered"
+
+# Additional tags that may be detected
+additional_tags:
+  popular_tags:
+    - "Battle Pass"
+    - "IP Collaboration"
+    - "Charity"
+    - "Subscription"
+    - "Watch-to-Earn"
+    - "Win Streak"
+    - "Side Content"
+    - "Scratch Card"
+    - "Portrait (Slot Machine)"
+    - "End-of-Level"
+    - "Rewards Program"
+
+  rerelease_tags:
+    - "None"
+    - "Redesign"
+    - "Rename"
+    - "Reprice"
+    - "Restructure"
+    - "Other"
+
+  purchase_tags:
+    - "Battle Pass"
+    - "External Purchase"
+    - "Stamp Card"
+    - "Subscription"
+
+  customization_tags:
+    - "Bonus"
+    - "Other"
+    - "Profile"
+    - "Visual"
+    - "Sound"
+    - "Story"

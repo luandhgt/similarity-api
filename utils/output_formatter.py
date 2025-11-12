@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class OutputFormatter:
-    def __init__(self, config_path: str = "config/output_formats.yaml"):
+    def __init__(self, config_path: str = "config/event_about_template.yaml"):
         self.config_path = config_path
         self._formats_cache = None
         self._load_formats()
@@ -22,11 +22,13 @@ class OutputFormatter:
             config_file = Path(self.config_path)
             if not config_file.exists():
                 raise FileNotFoundError(f"Output formats config file not found: {self.config_path}")
-            
+
             with open(config_file, 'r', encoding='utf-8') as file:
-                self._formats_cache = yaml.safe_load(file)
+                config_data = yaml.safe_load(file)
+                # Extract formats section from new structure
+                self._formats_cache = config_data.get('formats', {})
                 logger.info(f"✅ Loaded output formats from {self.config_path}")
-                
+
         except Exception as e:
             logger.error(f"❌ Error loading output formats config: {e}")
             # Fallback to basic formats

@@ -113,13 +113,13 @@ image-similarity-api/
 │       ├── test_container.py
 │       └── test_dtos.py
 │
-├── config/                # Configuration files
-│   ├── prompts.yaml       # Prompt templates
-│   ├── output_formats.yaml
-│   ├── similarity_prompts.yaml
-│   └── similarity_output_formats.yaml
+├── config/                # Configuration files (YAML only!)
+│   ├── event_about_prompts.yaml      # Event about generation prompts
+│   ├── event_about_template.yaml     # Event about output templates
+│   ├── similarity_prompts.yaml       # Similarity analysis prompts
+│   └── similarity_output_formats.yaml # Similarity output formats
 │
-├── docs/                  # Documentation
+├── docs/                  # Documentation (all .md files go here!)
 │   ├── README.md
 │   ├── QUICKSTART.md
 │   ├── SETUP.md
@@ -127,7 +127,9 @@ image-similarity-api/
 │   ├── README_REFACTOR.md
 │   ├── REFACTORING_COMPLETE.md
 │   ├── CODE_ANALYSIS.md
-│   └── CHANGELOG_REFACTOR.md
+│   ├── CHANGELOG_REFACTOR.md
+│   ├── CHANGELOG_EVENT_ABOUT.md      # Event about system changelog
+│   └── UPGRADE_SUMMARY.md            # Event about upgrade summary
 │
 ├── index/                 # FAISS indices (generated)
 │   ├── about/

@@ -46,9 +46,9 @@ class PromptManager:
             logger.error(f"Error loading prompt configurations: {e}")
     
     def _load_prompts(self):
-        """Load main prompts from prompts.yaml"""
+        """Load main prompts from event_about_prompts.yaml"""
         try:
-            prompts_file = self.config_dir / "prompts.yaml"
+            prompts_file = self.config_dir / "event_about_prompts.yaml"
             if prompts_file.exists():
                 with open(prompts_file, 'r', encoding='utf-8') as f:
                     self.prompts = yaml.safe_load(f) or {}
@@ -61,9 +61,9 @@ class PromptManager:
             self._create_default_prompts()
     
     def _load_output_formats(self):
-        """Load output formats from output_formats.yaml"""
+        """Load output formats from event_about_template.yaml"""
         try:
-            formats_file = self.config_dir / "output_formats.yaml"
+            formats_file = self.config_dir / "event_about_template.yaml"
             if formats_file.exists():
                 with open(formats_file, 'r', encoding='utf-8') as f:
                     self.output_formats = yaml.safe_load(f) or {}
@@ -220,8 +220,8 @@ class PromptManager:
         
         # Check main config files
         config_files = [
-            "prompts.yaml",
-            "output_formats.yaml", 
+            "event_about_prompts.yaml",
+            "event_about_template.yaml",
             "similarity_prompts.yaml",
             "similarity_output_formats.yaml"
         ]
