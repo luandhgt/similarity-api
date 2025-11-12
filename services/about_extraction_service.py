@@ -119,11 +119,12 @@ class AboutExtractionService:
         except Exception as e:
             processing_time = time.time() - start_time
             logger.error(f"❌ About extraction failed after {processing_time:.2f}s: {e}")
-            
+
             return {
                 "success": False,
                 "error": str(e),
                 "about_content": "",
+                "processing_time": processing_time,
                 "metadata": {
                     "processing_time": processing_time,
                     "folder_path": folder_path
