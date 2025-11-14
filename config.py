@@ -132,7 +132,7 @@ class Config:
     # CLAUDE API CONFIGURATION
     # =============================================================================
     CLAUDE_MODEL: str = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-5-20250929')
-    CLAUDE_MAX_TOKENS: int = int(os.getenv('CLAUDE_MAX_TOKENS', '4096'))
+    CLAUDE_MAX_TOKENS: int = int(os.getenv('CLAUDE_MAX_TOKENS', '8000'))  # Increased for long critique analysis
     CLAUDE_TEMPERATURE: float = float(os.getenv('CLAUDE_TEMPERATURE', '0.7'))
     CLAUDE_TIMEOUT: int = int(os.getenv('CLAUDE_TIMEOUT', '120'))
 
