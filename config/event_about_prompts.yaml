@@ -417,7 +417,16 @@ synthesis:
     - Event Type: {event_type}
     - Game: {game_code}
 
-    Create the output in the following format:
+    CRITICAL: You MUST respond with VALID JSON in this EXACT structure:
+
+    {{
+      "content": "[Full text content here - see format below]",
+      "family": "[MUST be EXACTLY ONE of these 21 values: Purchases, Quests, Challenges, Collections, Missions, Notices, Expansions, Competitions, Mini-Games, Banks, Interactions, Rewards, Clubs, Hazards, Other, Custom Design, Levels, Accelerators, Bonuses, Cosmetics, Currencies]",
+      "dynamic": "[MUST be EXACTLY ONE of these 6 values: Collaborative, Collaborative & competitive, Collaborative & individualistic, Indiv., collab., & comp, Individualistic, Individualistic & competitive]",
+      "reward": "[MUST be EXACTLY ONE of these 8 values: Currencies, Currencies & items, Currencies & real prize, Currencies, items, & real prize, Items, Items & real prize, None, Real prize]"
+    }}
+
+    The "content" field should contain the full description and critique in this format:
 
     [ENGLISH]
     Description:

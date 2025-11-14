@@ -5,7 +5,7 @@ import os
 import time
 import asyncio
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import logging
 
 from .claude_service import get_claude_service
@@ -82,13 +82,13 @@ class AboutExtractionService:
             
             logger.info(f"✅ Successfully processed {len(successful_ocrs)}/{len(image_paths)} images")
             
-            # Step 3: Synthesize content from OCR texts
-            about_content = await self._synthesize_about_content(
+            # Step 3: Synthesize content from OCR texts (returns JSON)
+            synthesis_result = await self._synthesize_about_content(
                 successful_ocrs, event_name, event_type, game_code
             )
 
-            # Step 3.5: Parse classification tags from content
-            parsed_tags = self._parse_classification_tags(about_content)
+            # Step 3.5: Extract content and tags from JSON response
+            about_content, parsed_tags = self._extract_content_and_tags(synthesis_result)
 
             # Step 4: Prepare metadata
             processing_time = time.time() - start_time
@@ -253,29 +253,52 @@ class AboutExtractionService:
 
         return about_content.strip()
 
-    def _parse_classification_tags(self, about_content: str) -> Dict[str, Optional[str]]:
+    def _extract_content_and_tags(self, synthesis_result: str) -> Tuple[str, Dict[str, Optional[str]]]:
         """
-        Parse classification tags from about content
+        Extract content and classification tags from Claude's JSON response
 
         Args:
-            about_content: Full about content with critique section
+            synthesis_result: JSON string from Claude containing content and tags
 
         Returns:
-            Dictionary with 'family', 'dynamic', 'reward' keys
+            Tuple of (content string, tags dictionary)
         """
+        import json
+
         try:
-            logger.info("🔍 Parsing classification tags from about content...")
-            parser = get_tag_parser()
-            tags = parser.parse_tags(about_content)
+            logger.info("🔍 Extracting content and tags from JSON response...")
 
-            # Log parsed tags summary
+            # Parse JSON response
+            result_data = json.loads(synthesis_result)
+
+            # Extract content and tags
+            content = result_data.get("content", "")
+            tags = {
+                "family": result_data.get("family"),
+                "dynamic": result_data.get("dynamic"),
+                "reward": result_data.get("reward")
+            }
+
+            # Validate tags
             parsed_count = sum(1 for v in tags.values() if v is not None)
-            logger.info(f"✅ Parsed {parsed_count}/3 tags successfully")
+            logger.info(f"✅ Extracted {parsed_count}/3 tags from JSON: family={tags['family']}, dynamic={tags['dynamic']}, reward={tags['reward']}")
 
-            return tags
+            return content, tags
+
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Failed to parse JSON response: {e}")
+            logger.warning("⚠️ Falling back to text-based parsing...")
+
+            # Fallback: try to extract content and use old parser
+            content = synthesis_result
+            parser = get_tag_parser()
+            tags = parser.parse_tags(content)
+
+            return content, tags
+
         except Exception as e:
-            logger.error(f"❌ Failed to parse tags: {e}", exc_info=True)
-            return {
+            logger.error(f"❌ Failed to extract content and tags: {e}", exc_info=True)
+            return synthesis_result, {
                 "family": None,
                 "dynamic": None,
                 "reward": None
