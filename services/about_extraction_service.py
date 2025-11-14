@@ -11,6 +11,7 @@ import logging
 from .claude_service import get_claude_service
 from utils.prompt_manager import PromptManager
 from utils.output_formatter import output_formatter
+from utils.tag_parser import get_tag_parser
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,10 @@ class AboutExtractionService:
             about_content = await self._synthesize_about_content(
                 successful_ocrs, event_name, event_type, game_code
             )
-            
+
+            # Step 3.5: Parse classification tags from content
+            parsed_tags = self._parse_classification_tags(about_content)
+
             # Step 4: Prepare metadata
             processing_time = time.time() - start_time
             metadata = {
@@ -108,12 +112,15 @@ class AboutExtractionService:
             )
             
             logger.info(f"🎉 About extraction completed in {processing_time:.2f}s")
-            
+
             return {
                 "success": True,
                 "about_content": about_content if output_format == "default" else formatted_result,
                 "metadata": metadata,
-                "processing_time": processing_time
+                "processing_time": processing_time,
+                "family": parsed_tags.get("family"),
+                "dynamic": parsed_tags.get("dynamic"),
+                "reward": parsed_tags.get("reward")
             }
             
         except Exception as e:
@@ -245,7 +252,35 @@ class AboutExtractionService:
         )
 
         return about_content.strip()
-    
+
+    def _parse_classification_tags(self, about_content: str) -> Dict[str, Optional[str]]:
+        """
+        Parse classification tags from about content
+
+        Args:
+            about_content: Full about content with critique section
+
+        Returns:
+            Dictionary with 'family', 'dynamic', 'reward' keys
+        """
+        try:
+            logger.info("🔍 Parsing classification tags from about content...")
+            parser = get_tag_parser()
+            tags = parser.parse_tags(about_content)
+
+            # Log parsed tags summary
+            parsed_count = sum(1 for v in tags.values() if v is not None)
+            logger.info(f"✅ Parsed {parsed_count}/3 tags successfully")
+
+            return tags
+        except Exception as e:
+            logger.error(f"❌ Failed to parse tags: {e}", exc_info=True)
+            return {
+                "family": None,
+                "dynamic": None,
+                "reward": None
+            }
+
     def get_supported_formats(self) -> List[str]:
         """Get list of supported output formats"""
         return self.formatter.get_available_formats()

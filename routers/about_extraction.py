@@ -31,6 +31,9 @@ class ExtractAboutResponse(BaseModel):
     processing_time: float
     metadata: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    family: Optional[str] = Field(None, description="Parsed mechanic family classification tag")
+    dynamic: Optional[str] = Field(None, description="Parsed player dynamics classification tag")
+    reward: Optional[str] = Field(None, description="Parsed reward types classification tag")
 
 class ServiceStatusResponse(BaseModel):
     status: str
@@ -96,13 +99,16 @@ async def extract_about(request: ExtractAboutRequest) -> ExtractAboutResponse:
         else:
             logger.error(f"❌ Processing failed: {result.get('error')}")
         
-        # Return response
+        # Return response with parsed tags
         return ExtractAboutResponse(
             success=result["success"],
             about_content=result["about_content"],
             processing_time=result["processing_time"],
             metadata=result.get("metadata"),
-            error=result.get("error")
+            error=result.get("error"),
+            family=result.get("family"),
+            dynamic=result.get("dynamic"),
+            reward=result.get("reward")
         )
         
     except HTTPException:
