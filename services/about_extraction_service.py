@@ -264,12 +264,23 @@ class AboutExtractionService:
             Tuple of (content string, tags dictionary)
         """
         import json
+        import re
 
         try:
             logger.info("🔍 Extracting content and tags from JSON response...")
 
+            # Remove markdown code block formatting if present
+            # Claude often wraps JSON in ```json ... ```
+            json_text = synthesis_result.strip()
+            if json_text.startswith('```'):
+                # Extract content between ```json and ```
+                match = re.search(r'```(?:json)?\s*\n(.*?)\n```', json_text, re.DOTALL)
+                if match:
+                    json_text = match.group(1)
+                    logger.debug("🔧 Removed markdown code block formatting")
+
             # Parse JSON response
-            result_data = json.loads(synthesis_result)
+            result_data = json.loads(json_text)
 
             # Extract content and tags
             content = result_data.get("content", "")
