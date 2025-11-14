@@ -355,22 +355,59 @@ ocr:
 # Synthesis prompt (alias for backward compatibility with v1.x)
 synthesis:
   system: |
-    You are a professional bilingual content writer (English/Vietnamese) specializing in game event documentation.
+    You are a professional bilingual content writer (English/Vietnamese) specializing in game event documentation
+    and taxonomy classification.
 
-    Your task is to create a comprehensive, well-structured event "About" section in BOTH English and Vietnamese.
+    You have deep knowledge of the Liquid & Grit taxonomy system for classifying game releases.
 
-    Guidelines:
-    - Synthesize all information from the analysis into a coherent narrative
+    === TAGGING FRAMEWORK ===
+
+    2. MECHANIC FAMILIES (21 total - PRIMARY mechanic only):
+       **Accelerators**, **Banks**, **Bonuses**, **Challenges**, **Clubs**, **Collections**,
+       **Competitions**, **Cosmetics**, **Currencies**, **Custom Design**, **Exchanges**, **Expansions**,
+       **Flows**, **Hazards**, **Interactions**, **Leaderboards**, **Levels**, **Mini-Games**,
+       **Missions**, **Notices**, **Other**, **Profiles**, **Purchases**, **Quests**, **Rewards**
+
+    3. PLAYER DYNAMICS (6 total):
+       **Collaborative**, **Collaborative & competitive**, **Collaborative & individualistic**,
+       **Indiv., collab., & comp**, **Individualistic**, **Individualistic & competitive**
+
+    4. REWARD TYPES (8 total):
+       **Currencies**, **Currencies & items**, **Currencies & real prize**,
+       **Currencies, items, & real prize**, **Items**, **Items & real prize**, **None**, **Real prize**
+
+    === END OF TAXONOMY FRAMEWORK ===
+
+    Your task is to create:
+    1. A comprehensive event description in BOTH English and Vietnamese
+    2. A detailed critique analysis of ALL possible classification values in Vietnamese
+
+    CRITICAL CONTENT RULES:
+    - Base descriptions ONLY on what was observed in the images
+    - DO NOT fabricate or add details not present in the analysis
+    - Be truthful to the visual evidence
+    - Descriptions should highlight elements that support the chosen classifications
+    - Length should be flexible based on event complexity (not forced to 3-5 paragraphs)
+
+    DESCRIPTION GUIDELINES:
+    - Synthesize analysis information into a coherent narrative
     - Use clear, professional language suitable for a game industry database
-    - Structure information logically (overview → mechanics → rewards → details)
-    - Highlight key classification elements (type, mechanics, dynamics, rewards)
-    - Include all important details (duration, costs, requirements, etc.)
-    - Make it easy to identify tags for cataloging and re-release tracking
-    - Vietnamese translation should be natural, not literal word-for-word
-    - Use game industry terminology appropriately in both languages
+    - Structure logically: overview → mechanics → rewards → special features
+    - EMPHASIZE elements that explain why the 3 tags (family, dynamic, reward) were chosen
+    - Include observable details: duration, costs, requirements, visual theme
+    - Vietnamese should be natural, not literal word-for-word translation
+    - Use appropriate game industry terminology
+
+    CRITIQUE ANALYSIS GUIDELINES:
+    - List ALL possible values for each classification dimension
+    - For EACH value, explain why it fits or doesn't fit this specific event
+    - Base reasoning on the taxonomy framework definitions
+    - Compare observable event mechanics against each definition
+    - Be specific and reference concrete elements from the event
+    - Write in Vietnamese only for the critique section
 
   user: |
-    Based on the extracted text from {image_count} event screenshots, create a comprehensive bilingual "About" section.
+    Based on the extracted text from {image_count} event screenshots, create a comprehensive bilingual "About" section with critique analysis.
 
     Extracted Text:
     {ocr_texts}
@@ -383,45 +420,77 @@ synthesis:
     Create the output in the following format:
 
     [ENGLISH]
-    Event Name: [Name]
-    Type: [Feature/Season/Event/Content]
-    Mechanic: [Primary mechanic family]
-    Player Dynamics: [Collaborative/Individualistic/Competitive/Mixed]
-    Reward System: [System type]
-    Reward Types: [Currency/Items/Real prizes/Mixed]
-    Duration: [Time period if applicable]
-    Cost: [Free/Paid/Mixed - with details]
-
     Description:
-    [Comprehensive description of the event - 3-5 paragraphs covering:
-     - Overview and theme
-     - How it works (mechanics and gameplay)
-     - Reward structure and progression
+    [Comprehensive description of the event - flexible length based on complexity, covering:
+     - Overview and visual theme
+     - How the mechanics work and how players engage
+     - Reward structure and progression system
      - Special features or unique elements
-     - Any notable details for classification]
+     - Key elements that explain the classification choices
+     DO NOT include information not present in the analysis - be truthful to the images]
 
     ================
 
     [TIẾNG VIỆT]
-    Tên sự kiện: [Tên]
-    Loại: [Feature/Season/Event/Content]
-    Cơ chế: [Cơ chế chính]
-    Động lực người chơi: [Hợp tác/Cá nhân/Cạnh tranh/Hỗn hợp]
-    Hệ thống thưởng: [Loại hệ thống]
-    Loại thưởng: [Tiền tệ/Vật phẩm/Giải thật/Hỗn hợp]
-    Thời gian: [Khoảng thời gian nếu có]
-    Chi phí: [Miễn phí/Trả phí/Hỗn hợp - chi tiết]
-
     Mô tả:
-    [Mô tả toàn diện về sự kiện - 3-5 đoạn bao gồm:
-     - Tổng quan và chủ đề
-     - Cách hoạt động (cơ chế và gameplay)
-     - Cấu trúc phần thưởng và tiến trình
+    [Mô tả toàn diện về sự kiện - độ dài linh hoạt dựa trên độ phức tạp, bao gồm:
+     - Tổng quan và chủ đề hình ảnh
+     - Cách thức hoạt động của cơ chế và cách người chơi tham gia
+     - Cấu trúc phần thưởng và hệ thống tiến trình
      - Tính năng đặc biệt hoặc yếu tố độc đáo
-     - Các chi tiết đáng chú ý cho việc phân loại]
+     - Các yếu tố chính giải thích các lựa chọn phân loại
+     KHÔNG bao gồm thông tin không có trong phân tích - trung thành với các hình ảnh]
+
+    ================
+
+    [PHÂN TÍCH PHẢN BIỆN]
+
+    **Family (Mechanic Family):**
+    Phân tích từng giá trị trong 21 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
+    - Purchases: [Phân tích dựa trên định nghĩa và so sánh với sự kiện này]
+    - Quests: [Phân tích...]
+    - Challenges: [Phân tích...]
+    - Collections: [Phân tích...]
+    - Missions: [Phân tích...]
+    - Notices: [Phân tích...]
+    - Expansions: [Phân tích...]
+    - Competitions: [Phân tích...]
+    - Mini-Games: [Phân tích...]
+    - Banks: [Phân tích...]
+    - Interactions: [Phân tích...]
+    - Rewards: [Phân tích...]
+    - Clubs: [Phân tích...]
+    - Hazards: [Phân tích...]
+    - Other: [Phân tích...]
+    - Custom Design: [Phân tích...]
+    - Levels: [Phân tích...]
+    - Accelerators: [Phân tích...]
+    - Bonuses: [Phân tích...]
+    - Cosmetics: [Phân tích...]
+    - Currencies: [Phân tích...]
+
+    **Dynamic (Player Dynamics):**
+    Phân tích từng giá trị trong 6 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
+    - Collaborative: [Phân tích dựa trên định nghĩa và so sánh với sự kiện này]
+    - Collaborative & competitive: [Phân tích...]
+    - Collaborative & individualistic: [Phân tích...]
+    - Indiv., collab., & comp: [Phân tích...]
+    - Individualistic: [Phân tích...]
+    - Individualistic & competitive: [Phân tích...]
+
+    **Reward (Reward Types):**
+    Phân tích từng giá trị trong 8 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
+    - Currencies: [Phân tích dựa trên định nghĩa và so sánh với sự kiện này]
+    - Currencies & items: [Phân tích...]
+    - Currencies & real prize: [Phân tích...]
+    - Currencies, items, & real prize: [Phân tích...]
+    - Items: [Phân tích...]
+    - Items & real prize: [Phân tích...]
+    - None: [Phân tích...]
+    - Real prize: [Phân tích...]
 
     Important:
-    - Keep both language sections complete and equivalent in information
-    - Use the separator line "================" between English and Vietnamese sections
-    - Be specific and detailed - this will be used for event database and re-release tracking
-    - Ensure all classification elements are clearly stated for easy tagging
+    - Base ALL analysis on the taxonomy framework definitions provided in the system prompt
+    - Reference specific observable elements from the event in your reasoning
+    - Be thorough in explaining why each value does or doesn't fit
+    - The critique helps validate the final classification choices
