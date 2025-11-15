@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize router
 router = APIRouter(
-    prefix="/api/find-similar-events",
-    tags=["event_similarity"],
+    prefix="/api",
+    tags=["find-similar-events"],
     responses={
         404: {"description": "Not found"},
         422: {"description": "Validation error"},
@@ -125,7 +125,7 @@ async def get_event_similarity_service():
 # API Endpoints
 
 @router.post(
-    "/",
+    "/find-similar-events",
     response_model=FindSimilarEventsResponse,
     summary="Find Similar Events",
     description="""
@@ -203,7 +203,7 @@ async def find_similar_events(
         )
 
 @router.get(
-    "/status",
+    "/find-similar-events/status",
     response_model=ServiceStatusResponse,
     summary="Get Service Status",
     description="Check the health status of the event similarity analysis service including database and AI models."
@@ -229,7 +229,7 @@ async def get_service_status(
         )
 
 @router.get(
-    "/taxonomy",
+    "/find-similar-events/taxonomy",
     response_model=TaxonomyInfo,
     summary="Get Available Taxonomy Values",
     description="Retrieve all available taxonomy values for event classification (family, dynamics, rewards)."
@@ -273,7 +273,7 @@ async def get_taxonomy_info(
         )
 
 @router.post(
-    "/validate",
+    "/find-similar-events/validate",
     summary="Validate Request Parameters",
     description="Validate request parameters without performing the full analysis. Useful for checking folder existence and parameter validity.",
     responses={
