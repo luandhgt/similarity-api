@@ -1,67 +1,57 @@
-# Event Similarity Output Formats Configuration
+# Event Similarity Output Format
+# Simple format matching the exact requirements from user specification
 
 formats:
-  default:
-    name: "Default Event Alternative Results"
-    description: "Standard event alternative analysis results"
-    template: |
-      {
-        "query_event": {query_event},
-        "similar_events": {similar_events},
-        "analysis_metadata": {
-          "total_candidates": {total_candidates},
-          "processed_at": "{timestamp}"
-        }
-      }
+  # Single format for event similarity results
+  similarity_result:
+    name: "Event Similarity Results"
+    description: "JSON array of similar events with name, score, and detailed analysis"
 
-  detailed_json:
-    name: "Detailed Event Alternative Results"
-    description: "Comprehensive alternative analysis with full metadata"
-    template: |
-      {
-        "query_event": {query_event},
-        "similar_events": {similar_events},
-        "analysis_stats": {
-          "total_candidates": {total_candidates},
-          "candidates_with_text_scores": {text_score_count},
-          "candidates_with_image_scores": {image_score_count},
-          "average_text_score": {avg_text_score},
-          "average_image_score": {avg_image_score}
-        },
-        "search_metadata": {
-          "query_game": "{game_code}",
-          "processed_at": "{timestamp}",
-          "analysis_version": "1.0"
+    # Example structure
+    example: |
+      [
+        {
+          "event-name": "Tên event tương tự",
+          "score": 85,
+          "detail": "**About (English):**\nOriginal English description of the event...\n\n**About (Tiếng Việt):**\nBản dịch tiếng Việt của mô tả event...\n\n**Taxonomy:**\nFamily: Competitions\nDynamics: Individualistic & competitive\nRewards: Currencies & items\n\n**Lý giải:**\nGiải thích chi tiết bằng tiếng Việt về lý do event này tương tự với query event..."
         }
-      }
+      ]
 
-  summary:
-    name: "Summary Alternative Results"
-    description: "Top alternative events with key metrics"
-    template: |
-      {
-        "query_name": "{query_name}",
-        "top_alternatives": {top_similar_events},
-        "summary": {
-          "total_found": {total_candidates},
-          "high_confidence_matches": {high_confidence_count},
-          "best_text_match_score": {best_text_score},
-          "best_image_match_score": {best_image_score}
-        }
-      }
+    # Field descriptions
+    fields:
+      event-name:
+        type: "string"
+        description: "Tên của event tương tự"
+        required: true
 
-  simple:
-    name: "Simple Alternative Results"
-    description: "Minimal results for quick integration"
-    template: |
-      {
-        "alternatives": {simple_events_list},
-        "count": {total_candidates}
-      }
+      score:
+        type: "integer"
+        description: "Điểm tương đồng từ 0-100"
+        required: true
+        range: [0, 100]
+
+      detail:
+        type: "string"
+        description: "Chi tiết phân tích với 4 phần: About (English), About (Tiếng Việt), Taxonomy, Lý giải"
+        required: true
+        format: |
+          **About (English):**
+          [Original English about text]
+
+          **About (Tiếng Việt):**
+          [Vietnamese translation]
+
+          **Taxonomy:**
+          Family: [value]
+          Dynamics: [value]
+          Rewards: [value]
+
+          **Lý giải:**
+          [Detailed Vietnamese explanation]
 
 settings:
-  default_format: "default"
-  max_results_per_type: 20
-  similarity_threshold: 0.3
-  include_scores: true
-  include_reasoning: true
+  max_results: 20
+  min_score: 0
+  sort_by: "score"
+  sort_order: "descending"
+  include_only_matching_taxonomy: true

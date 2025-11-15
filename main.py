@@ -80,19 +80,28 @@ async def lifespan(app: FastAPI):
         
         # Initialize Event Similarity service
         try:
-            from services.event_similarity_service import EventSimilarityService
-            
-            # Create service instance with dependencies
-            event_similarity_service = EventSimilarityService(
-                database_service=app.state.database_service
+            from services.event_similarity_service import initialize_event_similarity_service
+            from services.claude_service import get_claude_service
+            from utils.text_processor import get_voyage_client
+
+            # Get service dependencies
+            claude_service = get_claude_service()
+            voyage_client = get_voyage_client()
+            database_service = app.state.database_service
+
+            # Initialize service with all dependencies (text-only mode)
+            event_similarity_service = initialize_event_similarity_service(
+                claude_service=claude_service,
+                voyage_client=voyage_client,
+                database_service=database_service
             )
-            
+
             # Store service instance in app state
             app.state.event_similarity_service = event_similarity_service
-            
+
             # Test service status
             service_status = await event_similarity_service.get_service_status()
-            print(f"✅ Event Similarity service ready: {service_status['status']}")
+            print(f"✅ Event Similarity service ready: {service_status['status']} (text-only)")
         except Exception as e:
             print(f"⚠️ Event Similarity service warning: {e}")
             app.state.event_similarity_service = None
