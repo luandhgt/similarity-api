@@ -99,26 +99,70 @@ def extract_image_features(image_path):
 def validate_image_file(image_path):
     """
     Validate if file exists and is a valid image
-    
+    Case-insensitive file extension matching for cross-platform compatibility
+
     Args:
         image_path: Path to image file
-        
+
     Returns:
-        bool: True if valid
-        
+        str: Actual path to the file (with correct case)
+
     Raises:
         Exception: If validation fails
     """
     import os
-    
-    # Check file exists
-    if not os.path.exists(image_path):
-        raise Exception(f"Image file not found: {image_path}")
-    
+    import itertools
+
+    def generate_case_variations(text):
+        """Generate all possible case variations of a string"""
+        if not text:
+            return [text]
+
+        # Generate all combinations of upper/lower for each character
+        variations = set()
+        for combo in itertools.product(*[(c.lower(), c.upper()) for c in text]):
+            variations.add(''.join(combo))
+        return list(variations)
+
+    # Check if exact path exists
+    if os.path.exists(image_path):
+        actual_path = image_path
+    else:
+        # Try case-insensitive matching
+        directory = os.path.dirname(image_path)
+        filename_with_ext = os.path.basename(image_path)
+
+        # Split into name and extension
+        name_parts = filename_with_ext.rsplit('.', 1)
+        if len(name_parts) == 2:
+            base_name, original_ext = name_parts
+
+            # Common image extensions to try
+            extensions_to_try = [original_ext, 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']
+
+            actual_path = None
+            for ext in extensions_to_try:
+                # Generate all case variations for this extension
+                ext_variations = generate_case_variations(ext)
+
+                for ext_var in ext_variations:
+                    candidate_path = os.path.join(directory, f"{base_name}.{ext_var}")
+                    if os.path.exists(candidate_path):
+                        actual_path = candidate_path
+                        break
+
+                if actual_path:
+                    break
+
+            if actual_path is None:
+                raise Exception(f"Image file not found: {image_path} (tried case variations and common extensions)")
+        else:
+            raise Exception(f"Image file not found: {image_path}")
+
     # Check if file is valid image
     try:
-        with Image.open(image_path) as img:
+        with Image.open(actual_path) as img:
             pass  # Just check if it opens
-        return True
+        return actual_path
     except Exception as e:
-        raise Exception(f"Invalid image file: {image_path} - {e}")
+        raise Exception(f"Invalid image file: {actual_path} - {e}")

@@ -87,11 +87,11 @@ async def embed_image(request: EmbedImageRequest):
                 detail=f"content_type for images must be 'images', got '{request.content_type}'"
             )
         
-        # Validate input
-        validate_image_file(request.image_path)
-        
+        # Validate input and get actual file path (handles case-insensitive extensions)
+        actual_path = validate_image_file(request.image_path)
+
         # Extract features
-        vector = extract_image_features(request.image_path)
+        vector = extract_image_features(actual_path)
         
         # Add to FAISS
         faiss_index = add_vector_to_faiss(vector, request.game_name, request.content_type)
@@ -201,8 +201,8 @@ async def search_similar(request: SearchRequest):
                     detail="image_path can only be used with content_type='images'"
                 )
             
-            validate_image_file(request.image_path)
-            query_vector = extract_image_features(request.image_path)
+            actual_path = validate_image_file(request.image_path)
+            query_vector = extract_image_features(actual_path)
             
         else:
             # Text search
