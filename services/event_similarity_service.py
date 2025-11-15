@@ -18,11 +18,14 @@ from pathlib import Path
 import yaml
 import json
 import re
+import numpy as np
+import asyncio
 
 from services.claude_service import ClaudeService
 from services.database_service import DatabaseService
 from utils.text_processor import extract_text_features, VoyageClient
-from utils.faiss_manager import search_similar_vectors, normalize_game_code
+from utils.faiss_manager import search_similar_vectors, normalize_game_code, get_vector_by_index
+from utils.image_processor import extract_image_features
 
 logger = logging.getLogger(__name__)
 
@@ -75,36 +78,88 @@ class EventSimilarityService:
         shared_uploads_path: str = "/shared/uploads/"
     ) -> Dict[str, Any]:
         """
-        Find similar events using text-based search and Claude analysis
+        Find similar events using PARALLEL text + image search, then merge results
+
+        Flow:
+        1. Run text search (FAISS + Claude) and image search in PARALLEL
+        2. Wait for both to complete
+        3. Merge results (max 20 text + max 10 image = max 30 unique events)
+        4. Enrich with missing data from database
+        5. Return combined results with both text_score and image_score
 
         Args:
-            folder_name: Name of folder containing event images (not used in text-only version)
+            folder_name: Name of folder containing event images
             game_code: Game code identifier (e.g., 'candy_crush')
             event_name: Name of the query event
             about: Description of the query event
-            image_count: Expected number of images (validation only, not used yet)
-            shared_uploads_path: Base path for shared uploads (not used yet)
+            image_count: Expected number of images
+            shared_uploads_path: Base path for shared uploads
 
         Returns:
-            Dict with query_event and similar_events
+            Dict with query_event and similar_events (with both scores)
 
         Raises:
             ValueError: If parameters are invalid
             Exception: If search or analysis fails
         """
         logger.info(f"🔍 Finding similar events for: {event_name}")
-        logger.info(f"📝 Game: {game_code}, About length: {len(about)} chars")
+        logger.info(f"📝 Game: {game_code}, Folder: {folder_name}, Images: {image_count}")
 
         # Normalize game code
         normalized_game_code = normalize_game_code(game_code)
 
-        # Step 1: Extract text embeddings for query event
-        logger.info("🔄 Extracting text embeddings for query event...")
+        # Get uploaded image paths
+        folder_path = Path(shared_uploads_path) / folder_name
+        if not folder_path.exists():
+            raise FileNotFoundError(f"Folder not found: {folder_path}")
+
+        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
+        uploaded_image_paths = [
+            str(f) for f in folder_path.iterdir()
+            if f.is_file() and f.suffix.lower() in image_extensions
+        ]
+
+        if len(uploaded_image_paths) != image_count:
+            logger.warning(f"⚠️ Image count mismatch: expected {image_count}, found {len(uploaded_image_paths)}")
+
+        logger.info(f"✅ Found {len(uploaded_image_paths)} images in folder")
+
+        # Run text and image search IN PARALLEL
+        logger.info("🚀 Starting PARALLEL text + image search...")
+        text_result, image_scores = await asyncio.gather(
+            self._search_by_text(event_name, about, normalized_game_code),
+            self._search_by_image(uploaded_image_paths, normalized_game_code, top_k=10)
+        )
+
+        logger.info("✅ Both searches complete. Merging results...")
+
+        # Merge results
+        merged_result = await self._merge_text_and_image_results(
+            text_result=text_result,
+            image_scores=image_scores,
+            normalized_game_code=normalized_game_code
+        )
+
+        logger.info(f"✅ Final result: {len(merged_result['similar_events'])} events with combined scores")
+        return merged_result
+
+    async def _search_by_text(
+        self,
+        event_name: str,
+        about: str,
+        normalized_game_code: str
+    ) -> Dict[str, Any]:
+        """
+        Text-only search (original implementation)
+
+        Returns:
+            Dict with query_event and similar_events (max 20, from Claude)
+        """
+        logger.info("🔄 [TEXT] Extracting text embeddings...")
         name_vector = extract_text_features(event_name, self.voyage_client)
         about_vector = extract_text_features(about, self.voyage_client)
 
-        # Step 2: Search FAISS for similar events
-        logger.info("🔄 Searching FAISS indices for similar events...")
+        logger.info("🔄 [TEXT] Searching FAISS indices...")
 
         # Search name index (top 10)
         name_results = search_similar_vectors(
@@ -113,7 +168,7 @@ class EventSimilarityService:
             game_code=normalized_game_code,
             top_k=10
         )
-        logger.info(f"✅ Found {len(name_results)} results from name index")
+        logger.info(f"✅ [TEXT] Found {len(name_results)} from name index")
 
         # Search about index (top 10)
         about_results = search_similar_vectors(
@@ -122,42 +177,42 @@ class EventSimilarityService:
             game_code=normalized_game_code,
             top_k=10
         )
-        logger.info(f"✅ Found {len(about_results)} results from about index")
+        logger.info(f"✅ [TEXT] Found {len(about_results)} from about index")
 
-        # Step 3: Combine and deduplicate results
+        # Combine and deduplicate
         candidate_faiss_indices = self._combine_search_results(name_results, about_results)
-        logger.info(f"✅ Combined to {len(candidate_faiss_indices)} unique candidates")
+        logger.info(f"✅ [TEXT] Combined to {len(candidate_faiss_indices)} unique candidates")
 
         if len(candidate_faiss_indices) == 0:
-            logger.warning("⚠️ No similar events found in FAISS indices")
+            logger.warning("⚠️ [TEXT] No similar events found")
             return {
                 "query_event": {
                     "name": event_name,
                     "about": about,
                     "tags": {},
-                    "tag_explanation": "No similar events found to perform taxonomy analysis"
+                    "tag_explanation": "No similar events found"
                 },
                 "similar_events": []
             }
 
-        # Step 4: Get event details from database
-        logger.info(f"🔄 Fetching event details from database for {len(candidate_faiss_indices)} candidates...")
+        # Get event details from database
+        logger.info(f"🔄 [TEXT] Fetching {len(candidate_faiss_indices)} candidates from database...")
         candidate_events = await self.database_service.get_events_by_faiss_indices(candidate_faiss_indices)
-        logger.info(f"✅ Retrieved {len(candidate_events)} candidate events from database")
+        logger.info(f"✅ [TEXT] Retrieved {len(candidate_events)} candidate events")
 
-        # Step 5: Send to Claude for taxonomy analysis and similarity assessment
-        logger.info("🔄 Sending to Claude for analysis...")
+        # Send to Claude
+        logger.info("🔄 [TEXT] Sending to Claude for analysis...")
         claude_response = await self._analyze_with_claude(
             query_name=event_name,
             query_about=about,
             candidates=candidate_events
         )
 
-        # Step 6: Parse and format Claude's response
-        logger.info("🔄 Parsing Claude response...")
+        # Parse response
+        logger.info("🔄 [TEXT] Parsing Claude response...")
         result = self._parse_claude_response(claude_response, event_name, about)
 
-        logger.info(f"✅ Analysis complete. Found {len(result['similar_events'])} similar events")
+        logger.info(f"✅ [TEXT] Search complete: {len(result['similar_events'])} events from Claude")
         return result
 
     def _combine_search_results(
@@ -387,6 +442,317 @@ class EventSimilarityService:
         except Exception as e:
             logger.error(f"❌ Error extracting taxonomy: {e}")
             return {}
+
+    def _cosine_similarity(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
+        """
+        Calculate cosine similarity between two vectors
+
+        Args:
+            vec1: First vector
+            vec2: Second vector
+
+        Returns:
+            Cosine similarity score (0-1)
+        """
+        dot_product = np.dot(vec1, vec2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+
+        return float(dot_product / (norm1 * norm2))
+
+    async def _search_by_image(
+        self,
+        uploaded_image_paths: List[str],
+        game_code: str,
+        top_k: int = 10
+    ) -> Dict[str, float]:
+        """
+        Search for similar events by comparing uploaded images with all event images
+
+        Algorithm (brute force):
+        - FOR each event in the game
+          - FOR each uploaded image
+            - Find best matching image in that event (max similarity)
+          - Calculate average across all uploaded images
+        - Return top K events by average score
+
+        Args:
+            uploaded_image_paths: List of paths to uploaded query images
+            game_code: Game code (normalized)
+            top_k: Number of top events to return
+
+        Returns:
+            Dict mapping event_code to average image similarity score (0-1)
+        """
+        logger.info(f"🔍 Starting image search with {len(uploaded_image_paths)} uploaded images")
+
+        # Step 1: Extract vectors from uploaded images
+        logger.info("🔄 Extracting features from uploaded images...")
+        uploaded_vectors = []
+        for img_path in uploaded_image_paths:
+            try:
+                vector = extract_image_features(img_path)
+                uploaded_vectors.append(vector)
+                logger.debug(f"✅ Extracted features from {Path(img_path).name}")
+            except Exception as e:
+                logger.error(f"❌ Failed to extract features from {img_path}: {e}")
+                # Continue with other images
+                continue
+
+        if len(uploaded_vectors) == 0:
+            logger.error("❌ No valid uploaded image vectors")
+            return {}
+
+        logger.info(f"✅ Extracted {len(uploaded_vectors)} uploaded image vectors")
+
+        # Step 2: Get all events for this game
+        logger.info(f"🔄 Fetching all events for game {game_code}...")
+        all_events = await self.database_service.get_all_events_for_game(game_code)
+        logger.info(f"✅ Found {len(all_events)} events for game {game_code}")
+
+        if len(all_events) == 0:
+            logger.warning(f"⚠️ No events found for game {game_code}")
+            return {}
+
+        # Step 3: Calculate similarity scores for each event
+        logger.info("🔄 Calculating image similarities (brute force)...")
+        event_scores = {}
+
+        for i, event in enumerate(all_events, 1):
+            event_code = event['event_code']
+
+            # Get all image FAISS indices for this event
+            image_indices = await self.database_service.get_image_faiss_indices_for_event(
+                event_code=event_code,
+                game_code=game_code
+            )
+
+            if len(image_indices) == 0:
+                # Skip events without images
+                continue
+
+            # Get vectors from FAISS for this event's images
+            event_vectors = []
+            for faiss_idx in image_indices:
+                try:
+                    vector = get_vector_by_index(faiss_idx, "images", game_code)
+                    if vector is not None:
+                        event_vectors.append(vector)
+                except Exception as e:
+                    logger.error(f"❌ Error getting vector {faiss_idx}: {e}")
+                    continue
+
+            if len(event_vectors) == 0:
+                continue
+
+            # Calculate similarity: for each uploaded image, find best match in event
+            uploaded_best_scores = []
+            for uploaded_vec in uploaded_vectors:
+                # Find max similarity with any image in this event
+                max_score = 0.0
+                for event_vec in event_vectors:
+                    similarity = self._cosine_similarity(uploaded_vec, event_vec)
+                    max_score = max(max_score, similarity)
+
+                uploaded_best_scores.append(max_score)
+
+            # Average across all uploaded images
+            avg_score = sum(uploaded_best_scores) / len(uploaded_best_scores)
+            event_scores[event_code] = avg_score
+
+            if i % 100 == 0:
+                logger.info(f"   Processed {i}/{len(all_events)} events...")
+
+        logger.info(f"✅ Calculated scores for {len(event_scores)} events with images")
+
+        # Step 4: Sort and return top K
+        sorted_events = sorted(event_scores.items(), key=lambda x: x[1], reverse=True)
+        top_events = dict(sorted_events[:top_k])
+
+        logger.info(f"✅ Image search complete. Top {len(top_events)} events selected")
+        return top_events
+
+    async def _merge_text_and_image_results(
+        self,
+        text_result: Dict[str, Any],
+        image_scores: Dict[str, float],
+        normalized_game_code: str
+    ) -> Dict[str, Any]:
+        """
+        Merge text and image search results
+
+        Strategy:
+        - Text results: max 20 events from Claude (have name, about, score, tags, reason)
+        - Image results: max 10 events (have event_code, image_score only)
+        - Merge: collect all unique event_codes, enrich missing data
+        - Normalization: text scores 0-100 (keep), image scores 0-1 → 0-100
+        - Missing scores: set to 0
+        - Sort: by text_score descending
+
+        Args:
+            text_result: Result from _search_by_text (Claude response)
+            image_scores: Dict {event_code: image_score} from _search_by_image
+            normalized_game_code: Game code
+
+        Returns:
+            Merged result with both scores
+        """
+        logger.info("🔄 [MERGE] Merging text and image results...")
+
+        # Extract text events
+        text_events = text_result.get('similar_events', [])
+        text_event_codes = set()
+
+        # Build a map: event_code -> text event data
+        text_event_map = {}
+        for event in text_events:
+            # Extract event code from event-name or detail
+            # Claude returns "event-name" field, need to map to event_code
+            # We'll need to query database to match names to codes
+            event_name = event.get('event-name', '')
+            text_event_map[event_name] = event
+
+        logger.info(f"   Text results: {len(text_events)} events")
+        logger.info(f"   Image results: {len(image_scores)} events")
+
+        # Collect all unique event_codes
+        all_event_codes = set(image_scores.keys())
+
+        # Get event details from database for ALL event codes
+        logger.info(f"🔄 [MERGE] Fetching details for {len(all_event_codes)} unique events...")
+        events_details = await self.database_service.get_events_by_codes(list(all_event_codes))
+
+        # Also get images for all events
+        images_map = await self.database_service.get_images_for_events(list(all_event_codes))
+
+        # Build merged events list
+        merged_events = []
+
+        # Process text events (these already have full data from Claude)
+        for text_event in text_events:
+            event_name = text_event.get('event-name', '')
+
+            # Find matching event_code by name
+            matching_event = None
+            for event_detail in events_details:
+                if event_detail.get('name') == event_name:
+                    matching_event = event_detail
+                    break
+
+            if not matching_event:
+                # Can't find event_code, skip (shouldn't happen)
+                logger.warning(f"⚠️ [MERGE] Could not find event_code for: {event_name}")
+                continue
+
+            event_code = matching_event['code']
+
+            # Build merged event
+            merged_event = {
+                "name": event_name,
+                "about": self._extract_about_from_detail(text_event.get('detail', '')),
+                "score_text": text_event.get('score', 0),  # 0-100 from Claude
+                "score_image": int(image_scores.get(event_code, 0.0) * 100),  # 0-1 → 0-100
+                "reason": text_event.get('detail', ''),  # Full detail from Claude
+                "tags": self._extract_taxonomy_from_detail(text_event.get('detail', '')),
+                "tag_explanation": self._extract_tag_explanation_from_detail(text_event.get('detail', '')),
+                "image_faiss_indices": [img['faiss_index'] for img in images_map.get(event_code, [])]
+            }
+
+            merged_events.append(merged_event)
+            all_event_codes.discard(event_code)  # Remove from set
+
+        # Process remaining image-only events (not in text results)
+        logger.info(f"🔄 [MERGE] Processing {len(all_event_codes)} image-only events...")
+        for event_code in all_event_codes:
+            # Find event details
+            matching_event = None
+            for event_detail in events_details:
+                if event_detail.get('code') == event_code:
+                    matching_event = event_detail
+                    break
+
+            if not matching_event:
+                logger.warning(f"⚠️ [MERGE] Could not find details for event_code: {event_code}")
+                continue
+
+            # Get text embeddings for this event
+            text_embeddings_list = await self.database_service.get_text_embeddings_by_event_codes(
+                event_codes=[event_code],
+                content_types=['name', 'about']
+            )
+
+            about_text = ""
+            if text_embeddings_list and len(text_embeddings_list) > 0:
+                embeddings = text_embeddings_list[0].get('embeddings', {})
+                about_text = embeddings.get('about', {}).get('text_content', '')
+
+            # Build image-only event (no taxonomy, no Claude analysis)
+            merged_event = {
+                "name": matching_event.get('name', ''),
+                "about": about_text,
+                "score_text": 0,  # No text score
+                "score_image": int(image_scores.get(event_code, 0.0) * 100),  # 0-1 → 0-100
+                "reason": f"Found by image similarity only (score: {int(image_scores.get(event_code, 0.0) * 100)}/100)",
+                "tags": {"family": "", "dynamics": "", "rewards": ""},  # No taxonomy
+                "tag_explanation": "Not analyzed by Claude (image-only result)",
+                "image_faiss_indices": [img['faiss_index'] for img in images_map.get(event_code, [])]
+            }
+
+            merged_events.append(merged_event)
+
+        # Sort by text_score descending
+        merged_events.sort(key=lambda x: x['score_text'], reverse=True)
+
+        logger.info(f"✅ [MERGE] Merged {len(merged_events)} total events")
+
+        return {
+            "query_event": text_result.get('query_event', {}),
+            "similar_events": merged_events
+        }
+
+    def _extract_about_from_detail(self, detail: str) -> str:
+        """Extract English about text from Claude detail field"""
+        try:
+            match = re.search(r'\*\*About \(English\):\*\*\s*(.*?)(?:\*\*|$)', detail, re.DOTALL)
+            if match:
+                return match.group(1).strip()
+            return ""
+        except Exception:
+            return ""
+
+    def _extract_taxonomy_from_detail(self, detail: str) -> Dict[str, str]:
+        """Extract taxonomy from Claude detail field"""
+        try:
+            taxonomy_match = re.search(r'\*\*Taxonomy:\*\*\s*(.*?)(?:\*\*|$)', detail, re.DOTALL)
+            if not taxonomy_match:
+                return {"family": "", "dynamics": "", "rewards": ""}
+
+            taxonomy_text = taxonomy_match.group(1)
+
+            family_match = re.search(r'Family:\s*([^\n]+)', taxonomy_text)
+            dynamics_match = re.search(r'Dynamics:\s*([^\n]+)', taxonomy_text)
+            rewards_match = re.search(r'Rewards:\s*([^\n]+)', taxonomy_text)
+
+            return {
+                "family": family_match.group(1).strip() if family_match else "",
+                "dynamics": dynamics_match.group(1).strip() if dynamics_match else "",
+                "rewards": rewards_match.group(1).strip() if rewards_match else ""
+            }
+        except Exception:
+            return {"family": "", "dynamics": "", "rewards": ""}
+
+    def _extract_tag_explanation_from_detail(self, detail: str) -> str:
+        """Extract tag explanation from Claude detail field"""
+        try:
+            match = re.search(r'\*\*Lý giải:\*\*\s*(.*?)$', detail, re.DOTALL)
+            if match:
+                return match.group(1).strip()
+            return ""
+        except Exception:
+            return ""
 
     async def get_service_status(self) -> Dict[str, Any]:
         """

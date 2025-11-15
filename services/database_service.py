@@ -271,6 +271,140 @@ class DatabaseService:
             logger.error(f"Error querying events by FAISS indices: {e}")
             return []
     
+    async def get_all_events_for_game(self, game_code: str) -> List[Dict[str, Any]]:
+        """
+        Get all events for a specific game
+
+        Args:
+            game_code: Game code (e.g., 'candy_crush')
+
+        Returns:
+            List of event dictionaries with event_code
+        """
+        if not self.pool:
+            logger.error("Database connection pool not initialized")
+            return []
+
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                    SELECT
+                        code as event_code,
+                        name as event_name,
+                        game_code
+                    FROM events
+                    WHERE game_code = $1
+                    ORDER BY created_at DESC
+                """
+
+                rows = await conn.fetch(query, game_code)
+
+                results = []
+                for row in rows:
+                    results.append({
+                        "event_code": str(row["event_code"]),
+                        "event_name": row["event_name"],
+                        "game_code": row["game_code"]
+                    })
+
+                logger.info(f"Retrieved {len(results)} events for game {game_code}")
+                return results
+
+        except Exception as e:
+            logger.error(f"Error querying events for game {game_code}: {e}")
+            return []
+
+    async def get_image_faiss_indices_for_event(self, event_code: str, game_code: str) -> List[int]:
+        """
+        Get all image FAISS indices for a specific event
+
+        This assumes image_embeddings table exists with:
+        - event_code (UUID)
+        - faiss_index (INTEGER)
+        - file_name (TEXT)
+
+        Args:
+            event_code: Event code UUID
+            game_code: Game code (for future filtering if needed)
+
+        Returns:
+            List of FAISS index integers
+        """
+        if not self.pool:
+            logger.error("Database connection pool not initialized")
+            return []
+
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                    SELECT faiss_index
+                    FROM image_embeddings
+                    WHERE event_code = $1
+                    ORDER BY faiss_index
+                """
+
+                rows = await conn.fetch(query, event_code)
+
+                indices = [int(row["faiss_index"]) for row in rows]
+                logger.debug(f"Retrieved {len(indices)} image FAISS indices for event {event_code}")
+                return indices
+
+        except Exception as e:
+            logger.error(f"Error querying image FAISS indices for event {event_code}: {e}")
+            return []
+
+    async def get_images_for_events(self, event_codes: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Get all images for multiple events
+
+        Args:
+            event_codes: List of event code UUIDs
+
+        Returns:
+            Dict mapping event_code to list of image info dicts
+        """
+        if not event_codes:
+            return {}
+
+        if not self.pool:
+            logger.error("Database connection pool not initialized")
+            return {}
+
+        try:
+            async with self.pool.acquire() as conn:
+                query = """
+                    SELECT
+                        event_code,
+                        faiss_index,
+                        file_name,
+                        created_at
+                    FROM image_embeddings
+                    WHERE event_code = ANY($1::uuid[])
+                    ORDER BY event_code, faiss_index
+                """
+
+                rows = await conn.fetch(query, event_codes)
+
+                # Group by event_code
+                results = {}
+                for row in rows:
+                    event_code = str(row["event_code"])
+                    if event_code not in results:
+                        results[event_code] = []
+
+                    results[event_code].append({
+                        "faiss_index": row["faiss_index"],
+                        "file_name": row["file_name"],
+                        "created_at": row["created_at"].isoformat() if row["created_at"] else None
+                    })
+
+                logger.info(f"Retrieved images for {len(results)} events")
+                return results
+
+        except Exception as e:
+            logger.error(f"Error querying images for events: {e}")
+            return {}
+
     async def health_check(self) -> Dict[str, Any]:
         """Check database connection health"""
         if not self.pool:
@@ -279,11 +413,11 @@ class DatabaseService:
                 "message": "Database connection pool not initialized",
                 "timestamp": datetime.utcnow().isoformat()
             }
-        
+
         try:
             async with self.pool.acquire() as conn:
                 result = await conn.fetchval('SELECT COUNT(*) FROM events')
-                
+
                 return {
                     "status": "healthy",
                     "total_events": result,
@@ -296,7 +430,7 @@ class DatabaseService:
                     },
                     "timestamp": datetime.utcnow().isoformat()
                 }
-                
+
         except Exception as e:
             return {
                 "status": "error",

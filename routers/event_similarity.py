@@ -46,8 +46,8 @@ class SimilarEvent(BaseModel):
     """Similar event with scores and analysis"""
     name: str = Field(..., description="Similar event name")
     about: str = Field(..., description="Similar event description")
-    score_text: float = Field(..., ge=0.0, le=1.0, description="Text similarity score from Claude analysis")
-    score_image: float = Field(..., ge=0.0, le=1.0, description="Image similarity score from FAISS/calculated")
+    score_text: int = Field(..., ge=0, le=100, description="Text similarity score from Claude analysis (0-100)")
+    score_image: int = Field(..., ge=0, le=100, description="Image similarity score normalized to 0-100")
     reason: str = Field(..., description="Explanation of why this event is considered similar")
     tags: EventTags = Field(..., description="Taxonomy tags for the similar event")
     tag_explanation: str = Field(..., description="Explanation of taxonomy tagging")
