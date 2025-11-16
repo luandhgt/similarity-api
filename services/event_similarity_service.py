@@ -187,9 +187,7 @@ class EventSimilarityService:
             return {
                 "query_event": {
                     "name": event_name,
-                    "about": about,
-                    "tags": {},
-                    "tag_explanation": "No similar events found"
+                    "about": about
                 },
                 "similar_events": []
             }
@@ -354,9 +352,7 @@ class EventSimilarityService:
             result = {
                 "query_event": {
                     "name": query_name,
-                    "about": query_about,
-                    "tags": self._extract_taxonomy_from_first_result(similar_events),
-                    "tag_explanation": "Taxonomy assigned by Claude based on event analysis"
+                    "about": query_about
                 },
                 "similar_events": similar_events
             }
@@ -369,9 +365,7 @@ class EventSimilarityService:
             return {
                 "query_event": {
                     "name": query_name,
-                    "about": query_about,
-                    "tags": {},
-                    "tag_explanation": "Failed to parse Claude response"
+                    "about": query_about
                 },
                 "similar_events": []
             }
@@ -380,9 +374,7 @@ class EventSimilarityService:
             return {
                 "query_event": {
                     "name": query_name,
-                    "about": query_about,
-                    "tags": {},
-                    "tag_explanation": f"Error: {str(e)}"
+                    "about": query_about
                 },
                 "similar_events": []
             }

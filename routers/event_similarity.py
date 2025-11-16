@@ -39,8 +39,6 @@ class QueryEvent(BaseModel):
     """Query event information"""
     name: str = Field(..., description="Original event name")
     about: str = Field(..., description="Original event description")
-    tags: EventTags = Field(..., description="Taxonomy tags for the query event")
-    tag_explanation: str = Field(..., description="Explanation of why the event was tagged this way")
 
 class EventImage(BaseModel):
     """Event image information"""
