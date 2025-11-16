@@ -68,40 +68,46 @@ class DatabaseService:
     
     async def get_events_by_codes(self, event_codes: List[str]) -> List[Dict[str, Any]]:
         """
-        Get event details by event codes
-        
+        Get event details by event codes with text embeddings (name and about)
+
         Args:
             event_codes: List of event code UUIDs
-            
+
         Returns:
-            List of event dictionaries
+            List of event dictionaries with name and about text
         """
         if not event_codes:
             return []
-        
+
         if not self.pool:
             logger.error("Database connection pool not initialized")
             return []
-        
+
         try:
             async with self.pool.acquire() as conn:
                 query = """
-                    SELECT 
-                        id,
-                        code,
-                        game_code,
-                        name,
-                        search_key,
-                        author,
-                        publish_date,
-                        created_at
-                    FROM events 
-                    WHERE code = ANY($1::uuid[])
-                    ORDER BY created_at DESC
+                    SELECT
+                        e.id,
+                        e.code,
+                        e.game_code,
+                        e.name,
+                        e.search_key,
+                        e.author,
+                        e.publish_date,
+                        e.created_at,
+                        te_name.text_content as name_text,
+                        te_about.text_content as about_text
+                    FROM events e
+                    LEFT JOIN text_embeddings te_name
+                        ON te_name.event_code = e.code AND te_name.content_type = 'name'
+                    LEFT JOIN text_embeddings te_about
+                        ON te_about.event_code = e.code AND te_about.content_type = 'about'
+                    WHERE e.code = ANY($1::uuid[])
+                    ORDER BY e.created_at DESC
                 """
-                
+
                 rows = await conn.fetch(query, event_codes)
-                
+
                 results = []
                 for row in rows:
                     results.append({
@@ -109,15 +115,17 @@ class DatabaseService:
                         "code": str(row["code"]),
                         "game_code": row["game_code"],
                         "name": row["name"],
+                        "name_text": row["name_text"] if row["name_text"] else row["name"],  # Fallback to event name
+                        "about_text": row["about_text"] if row["about_text"] else "",
                         "search_key": row["search_key"],
                         "author": row["author"],
                         "publish_date": row["publish_date"].isoformat() if row["publish_date"] else None,
                         "created_at": row["created_at"].isoformat() if row["created_at"] else None
                     })
-                
-                logger.info(f"Retrieved {len(results)} events from database")
+
+                logger.info(f"Retrieved {len(results)} events with text embeddings from database")
                 return results
-                
+
         except Exception as e:
             logger.error(f"Error querying events by codes: {e}")
             return []
@@ -314,18 +322,12 @@ class DatabaseService:
             logger.error(f"Error querying events for game {game_code}: {e}")
             return []
 
-    async def get_image_faiss_indices_for_event(self, event_code: str, game_code: str) -> List[int]:
+    async def get_image_faiss_indices_for_event(self, event_code: str) -> List[int]:
         """
         Get all image FAISS indices for a specific event
 
-        This assumes image_embeddings table exists with:
-        - event_code (UUID)
-        - faiss_index (INTEGER)
-        - file_name (TEXT)
-
         Args:
             event_code: Event code UUID
-            game_code: Game code (for future filtering if needed)
 
         Returns:
             List of FAISS index integers
@@ -338,8 +340,10 @@ class DatabaseService:
             async with self.pool.acquire() as conn:
                 query = """
                     SELECT faiss_index
-                    FROM image_embeddings
+                    FROM images
                     WHERE event_code = $1
+                      AND is_deleted = FALSE
+                      AND faiss_index IS NOT NULL
                     ORDER BY faiss_index
                 """
 
@@ -361,7 +365,7 @@ class DatabaseService:
             event_codes: List of event code UUIDs
 
         Returns:
-            Dict mapping event_code to list of image info dicts
+            Dict mapping event_code to list of image info dicts with file_name and file_path
         """
         if not event_codes:
             return {}
@@ -375,11 +379,13 @@ class DatabaseService:
                 query = """
                     SELECT
                         event_code,
-                        faiss_index,
-                        file_name,
+                        filename,
+                        file_path,
                         created_at
-                    FROM image_embeddings
+                    FROM images
                     WHERE event_code = ANY($1::uuid[])
+                      AND is_deleted = FALSE
+                      AND faiss_index IS NOT NULL
                     ORDER BY event_code, faiss_index
                 """
 
@@ -393,8 +399,8 @@ class DatabaseService:
                         results[event_code] = []
 
                     results[event_code].append({
-                        "faiss_index": row["faiss_index"],
-                        "file_name": row["file_name"],
+                        "file_name": row["filename"],
+                        "file_path": row["file_path"],
                         "created_at": row["created_at"].isoformat() if row["created_at"] else None
                     })
 

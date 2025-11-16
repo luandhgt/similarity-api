@@ -132,7 +132,8 @@ similarity:
     ```json
     [
       {{
-        "event-name": "Tên event candidate",
+        "event-code": "event-code-uuid-from-candidate",
+        "event-name": "EXACT Name from candidate (e.g., 'King's Trials - Rise of Kingdoms')",
         "score": 85,
         "detail": "**About (English):**\n[Original English about text]\n\n**About (Tiếng Việt):**\n[Vietnamese translation of about text]\n\n**Taxonomy:**\nFamily: [value]\nDynamics: [value]\nRewards: [value]\n\n**Lý giải:**\n[Detailed explanation IN VIETNAMESE of why this event is similar to the query event. Include analysis of taxonomy match, content similarity, and similarity type (Redesign/Rename/Reprice/Restructure/Re-release). Be thorough and specific.]"
       }}
@@ -146,7 +147,10 @@ similarity:
     3. **Translation**: Translate "about" text from English to Vietnamese
     4. **Reasoning**: Provide detailed explanation in Vietnamese (Lý giải section)
     5. **Score**: Calculate similarity 0-100 based on content analysis
-    6. **No Extra Fields**: Do not add any fields beyond event-name, score, and detail
-    7. **Strict Format**: The "detail" field must have exactly 4 sections: About (English), About (Tiếng Việt), Taxonomy, Lý giải
+    6. **Minimum Score Threshold**: ONLY return events with score >= 50. Do NOT include events with score < 50 (low-quality matches)
+    7. **Event Code**: MUST copy the EXACT "Event Code" UUID from the candidate list (do not make up or modify codes)
+    8. **Event Name**: MUST copy the EXACT "Name" text from the candidate list WITHOUT any modifications (including game name suffix like "- Rise of Kingdoms")
+    9. **No Extra Fields**: Do not add any fields beyond event-code, event-name, score, and detail
+    10. **Strict Format**: The "detail" field must have exactly 4 sections: About (English), About (Tiếng Việt), Taxonomy, Lý giải
 
     Sort results by score (highest first).

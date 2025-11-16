@@ -42,16 +42,20 @@ class QueryEvent(BaseModel):
     tags: EventTags = Field(..., description="Taxonomy tags for the query event")
     tag_explanation: str = Field(..., description="Explanation of why the event was tagged this way")
 
+class EventImage(BaseModel):
+    """Event image information"""
+    file_name: str = Field(..., description="Image filename")
+    file_path: str = Field(..., description="Relative path to image file")
+    created_at: Optional[str] = Field(None, description="Image creation timestamp (ISO format)")
+
 class SimilarEvent(BaseModel):
     """Similar event with scores and analysis"""
     name: str = Field(..., description="Similar event name")
     about: str = Field(..., description="Similar event description")
     score_text: int = Field(..., ge=0, le=100, description="Text similarity score from Claude analysis (0-100)")
     score_image: int = Field(..., ge=0, le=100, description="Image similarity score normalized to 0-100")
-    reason: str = Field(..., description="Explanation of why this event is considered similar")
-    tags: EventTags = Field(..., description="Taxonomy tags for the similar event")
-    tag_explanation: str = Field(..., description="Explanation of taxonomy tagging")
-    image_faiss_indices: List[int] = Field(..., description="FAISS indices for matching images")
+    reason: str = Field(..., description="Explanation of why this event is considered similar (from Claude analysis if available)")
+    images: List[EventImage] = Field(..., description="List of event images with file paths")
 
 class FindSimilarEventsRequest(BaseModel):
     """Request model for finding similar events"""
@@ -78,8 +82,9 @@ class FindSimilarEventsRequest(BaseModel):
         """Validate game code format"""
         if not v or not v.strip():
             raise ValueError("Game code cannot be empty")
-        # Normalize game code
-        return v.lower().strip()
+        # Only strip whitespace, do NOT normalize to lowercase
+        # The original game_code is needed for database queries
+        return v.strip()
     
     @validator('shared_uploads_path')
     def validate_uploads_path(cls, v):

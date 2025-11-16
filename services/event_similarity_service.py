@@ -128,7 +128,7 @@ class EventSimilarityService:
         logger.info("🚀 Starting PARALLEL text + image search...")
         text_result, image_scores = await asyncio.gather(
             self._search_by_text(event_name, about, normalized_game_code),
-            self._search_by_image(uploaded_image_paths, normalized_game_code, top_k=10)
+            self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=10)
         )
 
         logger.info("✅ Both searches complete. Merging results...")
@@ -137,6 +137,7 @@ class EventSimilarityService:
         merged_result = await self._merge_text_and_image_results(
             text_result=text_result,
             image_scores=image_scores,
+            game_code=game_code,
             normalized_game_code=normalized_game_code
         )
 
@@ -343,6 +344,14 @@ class EventSimilarityService:
                 logger.error("❌ Claude response is not a JSON array")
                 similar_events = []
 
+            # BACKUP FILTER: Only keep events with score >= 50 (in case Claude didn't filter)
+            original_count = len(similar_events)
+            similar_events = [event for event in similar_events if event.get('score', 0) >= 50]
+            filtered_count = original_count - len(similar_events)
+
+            if filtered_count > 0:
+                logger.info(f"🔄 [FILTER] Removed {filtered_count} low-score events (score < 50). Kept {len(similar_events)}/{original_count}")
+
             # Build response in expected format
             result = {
                 "query_event": {
@@ -467,6 +476,7 @@ class EventSimilarityService:
         self,
         uploaded_image_paths: List[str],
         game_code: str,
+        normalized_game_code: str,
         top_k: int = 10
     ) -> Dict[str, float]:
         """
@@ -481,7 +491,8 @@ class EventSimilarityService:
 
         Args:
             uploaded_image_paths: List of paths to uploaded query images
-            game_code: Game code (normalized)
+            game_code: Original game code for database queries (e.g., "Candy Crush")
+            normalized_game_code: Normalized game code for FAISS index files (e.g., "candy_crush")
             top_k: Number of top events to return
 
         Returns:
@@ -526,8 +537,7 @@ class EventSimilarityService:
 
             # Get all image FAISS indices for this event
             image_indices = await self.database_service.get_image_faiss_indices_for_event(
-                event_code=event_code,
-                game_code=game_code
+                event_code=event_code
             )
 
             if len(image_indices) == 0:
@@ -538,7 +548,8 @@ class EventSimilarityService:
             event_vectors = []
             for faiss_idx in image_indices:
                 try:
-                    vector = get_vector_by_index(faiss_idx, "images", game_code)
+                    # Use normalized_game_code for FAISS index file operations
+                    vector = get_vector_by_index(faiss_idx, "images", normalized_game_code)
                     if vector is not None:
                         event_vectors.append(vector)
                 except Exception as e:
@@ -578,133 +589,127 @@ class EventSimilarityService:
     async def _merge_text_and_image_results(
         self,
         text_result: Dict[str, Any],
-        image_scores: Dict[str, float],
-        normalized_game_code: str
+        image_scores: Dict[str, float]
     ) -> Dict[str, Any]:
         """
         Merge text and image search results
 
         Strategy:
-        - Text results: max 20 events from Claude (have name, about, score, tags, reason)
-        - Image results: max 10 events (have event_code, image_score only)
-        - Merge: collect all unique event_codes, enrich missing data
-        - Normalization: text scores 0-100 (keep), image scores 0-1 → 0-100
-        - Missing scores: set to 0
-        - Sort: by text_score descending
+        - Collect all unique event_codes from both text and image results
+        - Fetch full details (name, about, images) from database for ALL events
+        - For each event, determine if it's in text, image, or both
+        - Build merged event with appropriate scores and reason
+        - Sort by text_score first, then image_score (both descending)
 
         Args:
             text_result: Result from _search_by_text (Claude response)
             image_scores: Dict {event_code: image_score} from _search_by_image
-            normalized_game_code: Game code
+            game_code: Original game code for database queries (e.g., "Candy Crush")
+            normalized_game_code: Normalized game code for FAISS (e.g., "candy_crush")
 
         Returns:
             Merged result with both scores
         """
         logger.info("🔄 [MERGE] Merging text and image results...")
 
-        # Extract text events
+        # Extract text events (Claude returns event-code directly)
         text_events = text_result.get('similar_events', [])
-        text_event_codes = set()
-
-        # Build a map: event_code -> text event data
-        text_event_map = {}
-        for event in text_events:
-            # Extract event code from event-name or detail
-            # Claude returns "event-name" field, need to map to event_code
-            # We'll need to query database to match names to codes
-            event_name = event.get('event-name', '')
-            text_event_map[event_name] = event
 
         logger.info(f"   Text results: {len(text_events)} events")
         logger.info(f"   Image results: {len(image_scores)} events")
 
-        # Collect all unique event_codes
-        all_event_codes = set(image_scores.keys())
+        # Collect all unique event_codes from BOTH text and image results
+        all_event_codes = set(image_scores.keys())  # Image event codes
 
-        # Get event details from database for ALL event codes
+        # Build text events lookup map
+        text_events_map = {}
+        for text_event in text_events:
+            event_code = text_event.get('event-code')
+            if event_code:
+                all_event_codes.add(event_code)
+                text_events_map[event_code] = text_event
+            else:
+                logger.warning(f"⚠️ [MERGE] Text event missing event-code: {text_event.get('event-name', 'Unknown')}")
+
+        # Get event details from database for ALL event codes (text + image)
         logger.info(f"🔄 [MERGE] Fetching details for {len(all_event_codes)} unique events...")
         events_details = await self.database_service.get_events_by_codes(list(all_event_codes))
 
-        # Also get images for all events
+        # Build events_details lookup map
+        events_details_map = {}
+        for event_detail in events_details:
+            events_details_map[event_detail.get('code')] = event_detail
+
+        # Get images for all events
         images_map = await self.database_service.get_images_for_events(list(all_event_codes))
 
         # Build merged events list
         merged_events = []
 
-        # Process text events (these already have full data from Claude)
-        for text_event in text_events:
-            event_name = text_event.get('event-name', '')
-
-            # Find matching event_code by name
-            matching_event = None
-            for event_detail in events_details:
-                if event_detail.get('name') == event_name:
-                    matching_event = event_detail
-                    break
-
-            if not matching_event:
-                # Can't find event_code, skip (shouldn't happen)
-                logger.warning(f"⚠️ [MERGE] Could not find event_code for: {event_name}")
-                continue
-
-            event_code = matching_event['code']
-
-            # Build merged event
-            merged_event = {
-                "name": event_name,
-                "about": self._extract_about_from_detail(text_event.get('detail', '')),
-                "score_text": text_event.get('score', 0),  # 0-100 from Claude
-                "score_image": int(image_scores.get(event_code, 0.0) * 100),  # 0-1 → 0-100
-                "reason": text_event.get('detail', ''),  # Full detail from Claude
-                "tags": self._extract_taxonomy_from_detail(text_event.get('detail', '')),
-                "tag_explanation": self._extract_tag_explanation_from_detail(text_event.get('detail', '')),
-                "image_faiss_indices": [img['faiss_index'] for img in images_map.get(event_code, [])]
-            }
-
-            merged_events.append(merged_event)
-            all_event_codes.discard(event_code)  # Remove from set
-
-        # Process remaining image-only events (not in text results)
-        logger.info(f"🔄 [MERGE] Processing {len(all_event_codes)} image-only events...")
+        # Process ALL event_codes
         for event_code in all_event_codes:
-            # Find event details
-            matching_event = None
-            for event_detail in events_details:
-                if event_detail.get('code') == event_code:
-                    matching_event = event_detail
-                    break
+            # Check if event_code is in text or image results
+            in_text = event_code in text_events_map
+            in_image = event_code in image_scores
 
-            if not matching_event:
+            # Get event details from database
+            event_detail = events_details_map.get(event_code)
+            if not event_detail:
                 logger.warning(f"⚠️ [MERGE] Could not find details for event_code: {event_code}")
                 continue
 
-            # Get text embeddings for this event
-            text_embeddings_list = await self.database_service.get_text_embeddings_by_event_codes(
-                event_codes=[event_code],
-                content_types=['name', 'about']
-            )
+            # Get name and about from event_detail
+            name = event_detail.get('name_text', event_detail.get('name', ''))
+            about = event_detail.get('about_text', '')
 
-            about_text = ""
-            if text_embeddings_list and len(text_embeddings_list) > 0:
-                embeddings = text_embeddings_list[0].get('embeddings', {})
-                about_text = embeddings.get('about', {}).get('text_content', '')
+            # Get images
+            images = images_map.get(event_code, [])
 
-            # Build image-only event (no taxonomy, no Claude analysis)
-            merged_event = {
-                "name": matching_event.get('name', ''),
-                "about": about_text,
-                "score_text": 0,  # No text score
-                "score_image": int(image_scores.get(event_code, 0.0) * 100),  # 0-1 → 0-100
-                "reason": f"Found by image similarity only (score: {int(image_scores.get(event_code, 0.0) * 100)}/100)",
-                "tags": {"family": "", "dynamics": "", "rewards": ""},  # No taxonomy
-                "tag_explanation": "Not analyzed by Claude (image-only result)",
-                "image_faiss_indices": [img['faiss_index'] for img in images_map.get(event_code, [])]
-            }
+            # Build merged event based on where it appears
+            if in_text and in_image:
+                # BOTH TEXT AND IMAGE
+                text_event = text_events_map[event_code]
+                merged_event = {
+                    "name": name,
+                    "about": about,
+                    "score_text": text_event.get('score', 0),  # 0-100 from Claude
+                    "score_image": int(image_scores.get(event_code, 0.0) * 100),  # 0-1 → 0-100
+                    "reason": text_event.get('detail', ''),  # Full detail from Claude
+                    "images": images
+                }
+
+            elif in_text:
+                # TEXT ONLY
+                text_event = text_events_map[event_code]
+                merged_event = {
+                    "name": name,
+                    "about": about,
+                    "score_text": text_event.get('score', 0),  # 0-100 from Claude
+                    "score_image": 0,  # No image score
+                    "reason": text_event.get('detail', ''),  # Full detail from Claude
+                    "images": images
+                }
+
+            elif in_image:
+                # IMAGE ONLY
+                merged_event = {
+                    "name": name,
+                    "about": about,
+                    "score_text": 0,  # No text score
+                    "score_image": int(image_scores.get(event_code, 0.0) * 100),  # 0-1 → 0-100
+                    "reason": "",  # No Claude analysis
+                    "images": images
+                }
+
+            else:
+                # Should not happen
+                logger.warning(f"⚠️ [MERGE] Event {event_code} not in text or image results")
+                continue
 
             merged_events.append(merged_event)
 
-        # Sort by text_score descending
-        merged_events.sort(key=lambda x: x['score_text'], reverse=True)
+        # Sort by text_score first, then image_score (both descending)
+        merged_events.sort(key=lambda x: (x['score_text'], x['score_image']), reverse=True)
 
         logger.info(f"✅ [MERGE] Merged {len(merged_events)} total events")
 
