@@ -136,9 +136,7 @@ class EventSimilarityService:
         # Merge results
         merged_result = await self._merge_text_and_image_results(
             text_result=text_result,
-            image_scores=image_scores,
-            game_code=game_code,
-            normalized_game_code=normalized_game_code
+            image_scores=image_scores
         )
 
         logger.info(f"✅ Final result: {len(merged_result['similar_events'])} events with combined scores")
