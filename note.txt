@@ -3,3 +3,92 @@ conda activate image-similarity-api
 
 
 về input ảnh thì tôi muốn search nhiều ảnh 1 lúc có lẽ trả về nên là separate results cho mỗi ảnh ( hãy cho tôi 1 ví dụ chỗ này nhé) B với top K thì hãy cho tôi 1 config đi về threshold thì tôi nghĩ cũng tương tự có config ( nói luôn ở đây thử ra đây là 2 project hoạc 1 project nhưng viết theo kiểu microservices. một project chạy node có nhiệm. vụ track event game mỗi ngày. chính project node này sẽ input anh đầu vào để search ảnh vaf tìm event tương đồng, khi project này search cũng trả về cho project kia) ko cần trả về đường dẫn ảnh chỉ cần trả về index vì metadata ảnh và index ở bên faiss này đã được map với 1 database postgresl bên project node bên kia rồi C nếu search batch thì có lợi gì và hại gì vụ cache thì tôi nhớ chính bạn bảo rằng faiss luôn load toàn bộ file vào ram khi search mà
+
+
+[TIẾNG VIỆT]
+Mô tả:
+Sự kiện Spirit of Gwiju (Tinh Thần Gwiju) mang đến một lễ kỷ niệm theo chủ đề xoay quanh việc bảo vệ Goryeo thông qua việc thắp sáng các ngọn lửa báo hiệu. Sự kiện có đoạn văn bản mang tính chất mô tả giàu cảm xúc về các biểu ngữ bay phấp phới, bộ giáp lấp lánh như ánh sao và việc bảo vệ Gwiju, tạo nên một chủ đề quân sự yêu nước. Người chơi tham gia bằng cách thu thập và sử dụng một loại tiền tệ sự kiện đặc biệt gọi là Torch (Ngọn đuốc), có thể kiếm được từ nhiều nguồn khác nhau trong suốt trò chơi. Những ngọn đuốc này đóng vai trò là cơ chế tham gia chính, cho phép người chơi tương tác với các ngọn lửa báo hiệu trên trang sự kiện chuyên dụng.
+
+Vòng lặp tiến trình cốt lõi bao gồm việc tiêu tốn Torch để thắp sáng các ngọn lửa báo hiệu, với mỗi hành động thắp sáng thưởng cho người chơi một số lượng ngẫu nhiên Beacon Medal (Huy chương Ngọn lửa). Điều này tạo ra một yếu tố biến đổi trong cấu trúc phần thưởng, nơi kết quả của mỗi lần tương tác không cố định. Beacon Medal hoạt động như một loại tiền tệ đặc biệt của sự kiện, được kết nối với hệ thống phần thưởng có tên "Meeds of Merit" (Công Trạng Xứng Đáng), nơi người chơi có thể đổi số huy chương tích lũy của mình lấy các phần thưởng mang tính thẩm mỹ bao gồm vật trang trí theo chủ đề, khung avatar và biển tên.
+
+Sự kiện hoạt động như một phần của hệ thống lịch lớn hơn có tên "Annals of Goryeo" (Biên Niên Sử Goryeo), cho thấy một loạt các sự kiện kết nối hoặc tuần tự với nhau. Giao diện lịch sự kiện hiển thị nhiều sự kiện đồng thời hoặc liên quan bao gồm "A Star Reborn" (Ngôi Sao Tái Sinh), "Sharp Eyes & Quick Hands" (Mắt Tinh Tay Nhanh), và cửa hàng đổi thưởng "Meeds of Merit" đã đề cập. Cấu trúc cho thấy người chơi làm việc riêng lẻ để thu thập tài nguyên, chuyển đổi chúng thông qua một hành động (thắp sáng ngọn lửa), và cuối cùng đổi tiền tệ sự kiện tích lũy lấy các vật phẩm tùy chỉnh thẩm mỹ vĩnh viễn.
+
+================
+
+[PHÂN TÍCH PHẢN BIỆN]
+
+**Family (Mechanic Family):**
+
+- **Purchases**: Không phù hợp. Sự kiện này không tập trung vào việc mua bán trực tiếp bằng tiền thật hoặc premium currency. Mặc dù có cơ chế sử dụng tài nguyên (Torch), nhưng đây là tài nguyên kiếm được trong game chứ không phải giao dịch mua bán chính thức.
+
+- **Quests**: Rất phù hợp. Sự kiện có cấu trúc nhiệm vụ rõ ràng với các bước được định nghĩa: thu thập Torch, sử dụng chúng để thắp sáng ngọn lửa báo hiệu, nhận Beacon Medal, và đổi medal lấy phần thưởng. Đây là chuỗi hành động có mục tiêu và phần thưởng cụ thể, phù hợp với định nghĩa của Quest mechanics.
+
+- **Challenges**: Có thể phù hợp một phần. Nếu việc thắp sáng các ngọn lửa báo hiệu yêu cầu kỹ năng đặc biệt hoặc có yếu tố thử thách về khó độ, nhưng từ mô tả hiện tại, không có bằng chứng rõ ràng về yếu tố thách thức về kỹ năng. Sự kiện có vẻ tập trung hơn vào việc thu thập và chuyển đổi tài nguyên.
+
+- **Collections**: Phù hợp một phần. Có yếu tố thu thập (Torch và Beacon Medal), nhưng đây không phải là mục đích chính. Thu thập chỉ là phương tiện để hoàn thành quest và đổi thưởng, không phải là cơ chế trung tâm như trong các sự kiện collection thuần túy.
+
+- **Missions**: Rất phù hợp. Tương tự như Quests, sự kiện có cấu trúc nhiệm vụ với các mục tiêu rõ ràng. Tuy nhiên, Mission thường ám chỉ các nhiệm vụ lớn hơn, phức tạp hơn, trong khi sự kiện này có vẻ đơn giản và lặp lại hơn.
+
+- **Notices**: Không phù hợp. Đây không phải là thông báo thông tin hoặc announcement đơn thuần. Sự kiện có cơ chế gameplay tích cực với participation và rewards.
+
+- **Expansions**: Không phù hợp. Không có bằng chứng về việc mở rộng nội dung game, bản đồ mới, hoặc tính năng vĩnh viễn. Đây là sự kiện tạm thời với cơ chế riêng biệt.
+
+- **Competitions**: Không phù hợp. Không có yếu tố cạnh tranh rõ ràng như leaderboard, ranking, hoặc so sánh với người chơi khác. Người chơi làm việc độc lập để đạt được phần thưởng cá nhân.
+
+- **Mini-Games**: Không phù hợp. Không có bằng chứng về một trò chơi con riêng biệt với mechanics khác biệt. Cơ chế thắp sáng ngọn lửa có vẻ là tương tác đơn giản chứ không phải mini-game độc lập.
+
+- **Banks**: Không phù hợp. Không có cơ chế lưu trữ, rút tiền, hoặc quản lý tài nguyên theo thời gian như một ngân hàng. Torch và Medal được sử dụng/đổi trực tiếp.
+
+- **Interactions**: Có thể phù hợp. Việc thắp sáng ngọn lửa báo hiệu là một hình thức tương tác, nhưng đây không phải là tương tác xã hội với người chơi khác mà là tương tác với hệ thống.
+
+- **Rewards**: Phù hợp một phần. Sự kiện có hệ thống phần thưởng rõ ràng (Beacon Medal và cosmetics), nhưng Rewards như một family thường chỉ các cơ chế phân phối thưởng đơn thuần, không phải toàn bộ quest/progression loop.
+
+- **Clubs**: Không phù hợp. Không có yếu tố guild, alliance, hoặc nhóm người chơi nào được đề cập.
+
+- **Hazards**: Không phù hợp. Không có yếu tố rủi ro, nguy hiểm, hoặc hậu quả tiêu cực nào được mô tả.
+
+- **Other**: Có thể phù hợp nếu sự kiện không khớp với bất kỳ category nào khác, nhưng sự kiện này khớp với Quests/Missions khá rõ ràng.
+
+- **Custom Design**: Không phù hợp. Mặc dù phần thưởng bao gồm cosmetics (decoration, avatar frame, name plaque), nhưng đây là các vật phẩm được thiết kế sẵn để đổi, không phải công cụ để người chơi tự thiết kế/tùy chỉnh sáng tạo.
+
+- **Levels**: Không phù hợp. Không có bằng chứng về hệ thống cấp độ, tiến trình level, hoặc unlock theo tier.
+
+- **Accelerators**: Không phù hợp. Không có cơ chế tăng tốc thời gian, giảm thời gian chờ, hoặc boost tốc độ progression.
+
+- **Bonuses**: Không phù hợp. Không có bonus multipliers, boosters, hoặc temporary buffs được mô tả.
+
+- **Cosmetics**: Phù hợp một phần. Phần thưởng cuối cùng là cosmetics (decoration, avatar frame, name plaque), nhưng Cosmetics như một family thường chỉ về việc thu thập/mua sắm cosmetics trực tiếp, không phải toàn bộ quest chain dẫn đến chúng.
+
+- **Currencies**: Phù hợp một phần. Sự kiện sử dụng nhiều loại currency (Torch, Beacon Medal), nhưng Currencies như một family thường chỉ về quản lý và trao đổi currency, không phải về quest mechanics sử dụng currency.
+
+**Dynamic (Player Dynamics):**
+
+- **Collaborative**: Không phù hợp. Không có bằng chứng về việc người chơi cần hợp tác, làm việc nhóm, hoặc đóng góp vào mục tiêu chung. Mỗi người chơi thu thập Torch và thắp sáng ngọn lửa độc lập.
+
+- **Collaborative & competitive**: Không phù hợp. Không có yếu tố cộng tác và cũng không có yếu tố cạnh tranh. Đây là sự kiện solo hoàn toàn.
+
+- **Collaborative & individualistic**: Không phù hợp. Không có yếu tố cộng tác nào được đề cập.
+
+- **Indiv., collab., & comp**: Không phù hợp. Sự kiện chỉ có yếu tố individualistic, không có collaborative hay competitive.
+
+- **Individualistic**: Rất phù hợp. Người chơi làm việc độc lập để thu thập Torch, thắp sáng ngọn lửa báo hiệu, kiếm Beacon Medal, và đổi phần thưởng cá nhân. Không có tương tác với người chơi khác, không có leaderboard, không có mục tiêu chung.
+
+- **Individualistic & competitive**: Không phù hợp. Mặc dù có yếu tố individualistic rõ ràng, nhưng không có yếu tố competitive nào (không có ranking, leaderboard, hoặc so sánh trực tiếp với người chơi khác).
+
+**Reward (Reward Types):**
+
+- **Currencies**: Không chính xác hoàn toàn. Beacon Medal là một loại currency trong sự kiện, nhưng phần thưởng cuối cùng mà người chơi đổi được từ Meeds of Merit là cosmetic items (decoration, avatar frame, name plaque), không phải chỉ có currency.
+
+- **Currencies & items**: Rất phù hợp. Người chơi nhận được Beacon Medal (một loại event currency) từ việc thắp sáng ngọn lửa, và sau đó đổi medal này lấy items (themed decoration, avatar frame, name plaque) trong Meeds of Merit. Đây chính xác là sự kết hợp của currency và items.
+
+- **Currencies & real prize**: Không phù hợp. Không có đề cập đến giải thưởng thực tế như tiền mặt, merchandise, hoặc prizes ngoài game.
+
+- **Currencies, items, & real prize**: Không phù hợp. Không có real prize component.
+
+- **Items**: Phù hợp một phần. Phần thưởng cuối cùng là items (decoration, avatar frame, name plaque), nhưng người chơi cũng nhận được Beacon Medal (currency) như một bước trung gian trong reward chain.
+
+- **Items & real prize**: Không phù hợp. Không có real prize.
+
+- **None**: Không phù hợp. Sự kiện có hệ thống phần thưởng rõ ràng với cả currency và items.
+
+- **Real prize**: Không phù hợp. Tất cả phần thưởng đều là in-game rewards (currency và cosmetic items), không có giải thưởng thực tế nào.
