@@ -126,12 +126,27 @@ class EventSimilarityService:
 
         # Run text and image search IN PARALLEL
         logger.info("🚀 Starting PARALLEL text + image search...")
-        text_result, image_scores = await asyncio.gather(
-            self._search_by_text(event_name, about, normalized_game_code),
-            self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=10)
-        )
 
-        logger.info("✅ Both searches complete. Merging results...")
+        # COMMENTED OUT TEXT SEARCH FOR DEBUGGING - Mock empty result
+        logger.info("⚠️ [DEBUG] Text search is DISABLED - using mock empty result")
+        text_result = {
+            "query_event": {
+                "name": event_name,
+                "about": about
+            },
+            "similar_events": []
+        }
+
+        # Run ONLY image search
+        image_scores = await self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=10)
+
+        # ORIGINAL CODE (commented out):
+        # text_result, image_scores = await asyncio.gather(
+        #     self._search_by_text(event_name, about, normalized_game_code),
+        #     self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=10)
+        # )
+
+        logger.info("✅ Image search complete (text search mocked). Merging results...")
 
         # Merge results
         merged_result = await self._merge_text_and_image_results(
