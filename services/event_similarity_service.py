@@ -522,12 +522,8 @@ class EventSimilarityService:
         logger.info("🔄 Calculating image similarities (brute force)...")
         event_scores = {}
 
-        # DEBUG: Track "Legendary Tavern" events for comparison
-        legendary_tavern_matches = []
-
         for i, event in enumerate(all_events, 1):
             event_code = event['event_code']
-            event_name = event.get('event_name', '')  # Fix: use 'event_name' not 'name'
 
             # Get all image FAISS indices for this event
             image_indices = await self.database_service.get_image_faiss_indices_for_event(
@@ -568,15 +564,6 @@ class EventSimilarityService:
             avg_score = sum(uploaded_best_scores) / len(uploaded_best_scores)
             event_scores[event_code] = avg_score
 
-            # DEBUG: Check if this is "Legendary Tavern - Rise of Kingdoms"
-            if "Legendary Tavern" in event_name:
-                legendary_tavern_matches.append({
-                    'event_code': event_code,
-                    'event_name': event_name,
-                    'score': avg_score
-                })
-                logger.info(f"🎯 [DEBUG] Found Legendary Tavern: {event_name} | Score: {avg_score:.4f} ({avg_score*100:.2f}%)")
-
             if i % 100 == 0:
                 logger.info(f"   Processed {i}/{len(all_events)} events...")
 
@@ -586,20 +573,7 @@ class EventSimilarityService:
         sorted_events = sorted(event_scores.items(), key=lambda x: x[1], reverse=True)
         top_events = dict(sorted_events[:top_k])
 
-        # DEBUG: Add "Legendary Tavern" matches to the end if not already in top K
-        if legendary_tavern_matches:
-            logger.info(f"🎯 [DEBUG] Found {len(legendary_tavern_matches)} Legendary Tavern event(s)")
-            for match in legendary_tavern_matches:
-                if match['event_code'] not in top_events:
-                    # Add to the end
-                    top_events[match['event_code']] = match['score']
-                    logger.info(f"🎯 [DEBUG] Added Legendary Tavern to results (not in top {top_k}): {match['event_name']} | Score: {match['score']:.4f} ({match['score']*100:.2f}%)")
-                else:
-                    logger.info(f"🎯 [DEBUG] Legendary Tavern already in top {top_k}: {match['event_name']} | Score: {match['score']:.4f} ({match['score']*100:.2f}%)")
-        else:
-            logger.warning(f"⚠️ [DEBUG] No 'Legendary Tavern' event found in {game_code}")
-
-        logger.info(f"✅ Image search complete. Returning {len(top_events)} events (top {top_k} + debug events)")
+        logger.info(f"✅ Image search complete. Top {len(top_events)} events selected")
         return top_events
 
     async def _merge_text_and_image_results(
