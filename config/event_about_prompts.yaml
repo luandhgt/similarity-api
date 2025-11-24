@@ -39,61 +39,7 @@ event_analysis:
        - Event: Limited-time releases (tournaments, challenges, special offers)
        - Content: Core game content (slot machines, bingo rooms, levels, heroes, etc.)
 
-    2. MECHANIC FAMILIES (21 total - PRIMARY mechanic only):
-
-       **Accelerators**: Features, events, or content that increase the power, impact, or efficiency of play
-
-       **Banks**: Features or events that save a percentage of spend or rewards to be unlocked later
-
-       **Bonuses**: Features that give free value to players, often with time intervals for retention
-
-       **Challenges**: Features or events that consist of tasks for players to complete in any order
-
-       **Clubs**: Features or events in which groups with voluntary inclusion work together to accomplish goals,
-                  or compete with other groups. Does NOT include short-term randomized 'team-based' events.
-
-       **Collections**: Features or events in which players collect a set of items, for a completion prize or
-                        milestone rewards. NOTE: Just because players "collect" items doesn't mean it's Collections family.
-                        Use Collections when rewards are based on COMPLETING A SET/GROUP.
-
-       **Competitions**: Features or events in which players compete against other players
-
-       **Cosmetics**: Features that make improvements or updates to the look and/or feel of the app (e.g., UI updates)
-
-       **Currencies**: Features that make changes to currencies, economies, stores, and items
-
-       **Custom Design**: Features or events that give players options for cosmetic customization
-
-       **Exchanges**: A feature that allows players to trade currency for another item or currency.
-                      Limited-time events should use 'Rewards' instead.
-
-       **Expansions**: Features or events that add new play areas, like rooms, worlds, play modes, VIP lounges, etc.
-
-       **Flows**: Features that highlight player experiences, like the NUX, ratings, and surveys
-
-       **Hazards**: Features or content with level elements/blockers that increase difficulty
-
-       **Interactions**: Social features or events with direct or indirect interaction. In-game 'social' events where
-                        rewards are tied to interacting socially OR social interaction is a requirement.
-
-       **Leaderboards**: Features of stand-alone leaderboards or rankings
-
-       **Levels**: Features or events where players level or upgrade something (e.g., pets, buildings, etc.)
-
-       **Mini-Games**: Features or events with smaller, shorter games that are outside the app's usual mode
-                       and mechanic of play (e.g., scratch cards, board games, etc.)
-                       - Pre-purchase mini-game: Code as Mini-Games (can interact before purchase)
-                       - Post-purchase mini-game: Code as Purchases (must purchase to interact)
-
-       **Missions**: Features or events with a linear set of tasks that players must accomplish in sequence
-                     (e.g., complete task 1 to unlock and complete task 2). Battle Passes are typically Missions
-                     due to linear progression for collecting rewards.
-
-       **Notices**: Features containing product announcements, terms of service updates, or privacy updates
-
-       **Other**: Miscellaneous features and events that don't fit into any other family
-
-       **Profiles**: Features related to players' settings, profiles, and controls
+    2. MECHANIC FAMILIES (18 total - PRIMARY mechanic only):
 
        **Purchases**: Features or events that have anything to do with spending real money on in-app items
                       - Straight IAP for bundles: Code as Purchases
@@ -101,8 +47,47 @@ event_analysis:
 
        **Quests**: Features or events in which players complete tasks to progress on a map or map-like mechanic
 
-       **Rewards**: Features or events that reward players for engagement or spend (other than Bonuses family).
+       **Challenges**: Features or events that consist of tasks for players to complete in any order
+
+       **Collections**: Features or events in which players collect a set of items, for a completion prize or
+                        milestone rewards. NOTE: Just because players "collect" items doesn't mean it's Collections family.
+                        Use Collections when rewards are based on COMPLETING A SET/GROUP.
+
+       **Missions**: Features or events with a linear set of tasks that players must accomplish in sequence
+                     (e.g., complete task 1 to unlock and complete task 2). Battle Passes are typically Missions
+                     due to linear progression for collecting rewards.
+
+       **Notices**: Features containing product announcements, terms of service updates, or privacy updates
+
+       **Expansions**: Features or events that add new play areas, like rooms, worlds, play modes, VIP lounges, etc.
+
+       **Competitions**: Features or events in which players compete against other players
+
+       **Mini-Games**: Features or events with smaller, shorter games that are outside the app's usual mode
+                       and mechanic of play (e.g., scratch cards, board games, etc.)
+                       - Pre-purchase mini-game: Code as Mini-Games (can interact before purchase)
+                       - Post-purchase mini-game: Code as Purchases (must purchase to interact)
+
+       **Banks**: Features or events that save a percentage of spend or rewards to be unlocked later
+
+       **Interactions**: Social features or events with direct or indirect interaction. In-game 'social' events where
+                        rewards are tied to interacting socially OR social interaction is a requirement.
+
+       **Rewards**: Features or events that reward players for engagement or spend.
                     Use when rewards are based on EXCHANGES (collect items then exchange for rewards).
+
+       **Clubs**: Features or events in which groups with voluntary inclusion work together to accomplish goals,
+                  or compete with other groups. Does NOT include short-term randomized 'team-based' events.
+
+       **Hazards**: Features or content with level elements/blockers that increase difficulty
+
+       **Other**: Miscellaneous features and events that don't fit into any other family
+
+       **Custom Design**: Features or events that give players options for cosmetic customization
+
+       **Levels**: Features or events where players level or upgrade something (e.g., pets, buildings, etc.)
+
+       **Accelerators**: Features, events, or content that increase the power, impact, or efficiency of play
 
     3. PLAYER DYNAMICS (6 total):
 
@@ -279,7 +264,7 @@ synthesis_bilingual:
     [PHÂN TÍCH PHẢN BIỆN]
 
     **Family (Mechanic Family):**
-    Phân tích từng giá trị trong 21 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
+    Phân tích từng giá trị trong 18 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
     - Purchases: [Phân tích dựa trên định nghĩa và so sánh với sự kiện này]
     - Quests: [Phân tích...]
     - Challenges: [Phân tích...]
@@ -298,9 +283,6 @@ synthesis_bilingual:
     - Custom Design: [Phân tích...]
     - Levels: [Phân tích...]
     - Accelerators: [Phân tích...]
-    - Bonuses: [Phân tích...]
-    - Cosmetics: [Phân tích...]
-    - Currencies: [Phân tích...]
 
     **Dynamic (Player Dynamics):**
     Phân tích từng giá trị trong 6 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
@@ -364,11 +346,10 @@ synthesis:
 
     === TAGGING FRAMEWORK ===
 
-    2. MECHANIC FAMILIES (21 total - PRIMARY mechanic only):
-       **Accelerators**, **Banks**, **Bonuses**, **Challenges**, **Clubs**, **Collections**,
-       **Competitions**, **Cosmetics**, **Currencies**, **Custom Design**, **Exchanges**, **Expansions**,
-       **Flows**, **Hazards**, **Interactions**, **Leaderboards**, **Levels**, **Mini-Games**,
-       **Missions**, **Notices**, **Other**, **Profiles**, **Purchases**, **Quests**, **Rewards**
+    2. MECHANIC FAMILIES (18 total - PRIMARY mechanic only):
+       **Purchases**, **Quests**, **Challenges**, **Collections**, **Missions**, **Notices**,
+       **Expansions**, **Competitions**, **Mini-Games**, **Banks**, **Interactions**, **Rewards**,
+       **Clubs**, **Hazards**, **Other**, **Custom Design**, **Levels**, **Accelerators**
 
     3. PLAYER DYNAMICS (6 total):
        **Collaborative**, **Collaborative & competitive**, **Collaborative & individualistic**,
@@ -423,7 +404,7 @@ synthesis:
 
     {{
       "content": "[Full text content here - see format below]",
-      "family": "[MUST be EXACTLY ONE of these 21 values: Purchases, Quests, Challenges, Collections, Missions, Notices, Expansions, Competitions, Mini-Games, Banks, Interactions, Rewards, Clubs, Hazards, Other, Custom Design, Levels, Accelerators, Bonuses, Cosmetics, Currencies]",
+      "family": "[MUST be EXACTLY ONE of these 18 values: Purchases, Quests, Challenges, Collections, Missions, Notices, Expansions, Competitions, Mini-Games, Banks, Interactions, Rewards, Clubs, Hazards, Other, Custom Design, Levels, Accelerators]",
       "dynamic": "[MUST be EXACTLY ONE of these 6 values: Collaborative, Collaborative & competitive, Collaborative & individualistic, Indiv., collab., & comp, Individualistic, Individualistic & competitive]",
       "reward": "[MUST be EXACTLY ONE of these 8 values: Currencies, Currencies & items, Currencies & real prize, Currencies, items, & real prize, Items, Items & real prize, None, Real prize]"
     }}
@@ -459,7 +440,7 @@ synthesis:
     [PHÂN TÍCH PHẢN BIỆN]
 
     **Family (Mechanic Family):**
-    Phân tích từng giá trị trong 21 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
+    Phân tích từng giá trị trong 18 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
     - Purchases: [Phân tích dựa trên định nghĩa và so sánh với sự kiện này]
     - Quests: [Phân tích...]
     - Challenges: [Phân tích...]
@@ -478,9 +459,6 @@ synthesis:
     - Custom Design: [Phân tích...]
     - Levels: [Phân tích...]
     - Accelerators: [Phân tích...]
-    - Bonuses: [Phân tích...]
-    - Cosmetics: [Phân tích...]
-    - Currencies: [Phân tích...]
 
     **Dynamic (Player Dynamics):**
     Phân tích từng giá trị trong 6 giá trị sau và giải thích tại sao phù hợp hoặc không phù hợp:
