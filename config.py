@@ -129,12 +129,31 @@ class Config:
     )
 
     # =============================================================================
-    # CLAUDE API CONFIGURATION
+    # LLM PROVIDER CONFIGURATION (Multi-Provider Support)
     # =============================================================================
+    # Provider Selection: "claude", "chatgpt", "gemini"
+    LLM_PROVIDER: str = os.getenv('LLM_PROVIDER', 'claude')
+
+    # Claude API Configuration
+    CLAUDE_API_KEY: str = os.getenv('CLAUDE_API_KEY', '')
     CLAUDE_MODEL: str = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-5-20250929')
-    CLAUDE_MAX_TOKENS: int = int(os.getenv('CLAUDE_MAX_TOKENS', '8000'))  # Increased for long critique analysis
+    CLAUDE_MAX_TOKENS: int = int(os.getenv('CLAUDE_MAX_TOKENS', '8000'))  # Max OUTPUT (can increase to 16K, 32K, 64K)
     CLAUDE_TEMPERATURE: float = float(os.getenv('CLAUDE_TEMPERATURE', '0.7'))
-    CLAUDE_TIMEOUT: int = int(os.getenv('CLAUDE_TIMEOUT', '300'))  # 5 minutes for similarity analysis with many candidates
+    CLAUDE_TIMEOUT: int = int(os.getenv('CLAUDE_TIMEOUT', '300'))
+
+    # OpenAI (ChatGPT) API Configuration
+    OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY', '')
+    OPENAI_MODEL: str = os.getenv('OPENAI_MODEL', 'gpt-4o')
+    OPENAI_MAX_TOKENS: int = int(os.getenv('OPENAI_MAX_TOKENS', '16384'))  # Max OUTPUT: gpt-4o/5-chat: 16K | gpt-5/5-pro/5-mini: 128K
+    OPENAI_TEMPERATURE: float = float(os.getenv('OPENAI_TEMPERATURE', '0.7'))
+    OPENAI_TIMEOUT: int = int(os.getenv('OPENAI_TIMEOUT', '300'))
+
+    # Google (Gemini) API Configuration
+    GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY', '')
+    GEMINI_MODEL: str = os.getenv('GEMINI_MODEL', 'gemini-pro')
+    GEMINI_MAX_TOKENS: int = int(os.getenv('GEMINI_MAX_TOKENS', '4096'))
+    GEMINI_TEMPERATURE: float = float(os.getenv('GEMINI_TEMPERATURE', '0.7'))
+    GEMINI_TIMEOUT: int = int(os.getenv('GEMINI_TIMEOUT', '300'))
 
     # =============================================================================
     # LOGGING CONFIGURATION
@@ -206,6 +225,57 @@ class Config:
             'password': cls.DB_PASS,
             'database': cls.DB_NAME
         }
+
+    @classmethod
+    def get_llm_provider_config(cls) -> dict:
+        """
+        Get LLM provider configuration based on selected provider
+
+        Returns:
+            Dictionary with provider configuration including:
+            - provider_type: Selected provider ("claude", "chatgpt", "gemini")
+            - api_key: API key for selected provider
+            - model: Model name for selected provider
+            - max_tokens: Max tokens setting
+            - temperature: Temperature setting
+            - timeout: Timeout setting
+        """
+        provider = cls.LLM_PROVIDER.lower()
+
+        config_map = {
+            'claude': {
+                'provider_type': 'claude',
+                'api_key': cls.CLAUDE_API_KEY,
+                'model': cls.CLAUDE_MODEL,
+                'max_tokens': cls.CLAUDE_MAX_TOKENS,
+                'temperature': cls.CLAUDE_TEMPERATURE,
+                'timeout': cls.CLAUDE_TIMEOUT,
+            },
+            'chatgpt': {
+                'provider_type': 'chatgpt',
+                'api_key': cls.OPENAI_API_KEY,
+                'model': cls.OPENAI_MODEL,
+                'max_tokens': cls.OPENAI_MAX_TOKENS,
+                'temperature': cls.OPENAI_TEMPERATURE,
+                'timeout': cls.OPENAI_TIMEOUT,
+            },
+            'gemini': {
+                'provider_type': 'gemini',
+                'api_key': cls.GEMINI_API_KEY,
+                'model': cls.GEMINI_MODEL,
+                'max_tokens': cls.GEMINI_MAX_TOKENS,
+                'temperature': cls.GEMINI_TEMPERATURE,
+                'timeout': cls.GEMINI_TIMEOUT,
+            },
+        }
+
+        if provider not in config_map:
+            raise ValueError(
+                f"Invalid LLM_PROVIDER: {provider}. "
+                f"Must be one of: {', '.join(config_map.keys())}"
+            )
+
+        return config_map[provider]
 
     @classmethod
     def setup_logging(cls) -> None:

@@ -33,3 +33,6 @@ scikit-learn==1.3.2    # Required for sklearn imports in event similarity
 scipy==1.10.1          # Compatible scipy version (fixes ufunc error)
 anthropic==0.7.8       # Claude API client
 voyageai==0.2.1        # Voyage AI embeddings client
+
+# Multi-LLM Provider Support (v2.1.0)
+openai>=2.0.0          # OpenAI API client for ChatGPT provider (v2.x with GPT-4o, GPT-5 support)

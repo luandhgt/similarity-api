@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 
-from .claude_service import get_claude_service
+from core.container import get_container, ServiceNames
 from utils.prompt_manager import PromptManager
 from utils.output_formatter import output_formatter
 from utils.tag_parser import get_tag_parser
@@ -17,20 +17,21 @@ logger = logging.getLogger(__name__)
 
 class AboutExtractionService:
     def __init__(self):
-        self.claude = None  # Will be lazy loaded
-        self.prompt_manager = PromptManager() 
+        self.llm_provider = None  # Will be lazy loaded (Claude/ChatGPT/Gemini)
+        self.prompt_manager = PromptManager()
         self.formatter = output_formatter
-        
+
         # Supported image extensions
         self.supported_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
-        
+
         logger.info("✅ About Extraction Service initialized")
-    
+
     def _get_claude_service(self):
-        """Lazy load Claude service"""
-        if self.claude is None:
-            self.claude = get_claude_service()
-        return self.claude
+        """Lazy load LLM provider (Claude/ChatGPT/Gemini based on config)"""
+        if self.llm_provider is None:
+            container = get_container()
+            self.llm_provider = container.get(ServiceNames.CLAUDE)
+        return self.llm_provider
     
     async def extract_about_from_folder(self,
                                       folder_path: str,
@@ -38,7 +39,7 @@ class AboutExtractionService:
                                       event_type: str = "",
                                       game_code: str = "",
                                       output_format: str = "default",
-                                      process_parallel: bool = False) -> Dict[str, Any]:
+                                      process_parallel: bool = True) -> Dict[str, Any]:
         """
         Main method to extract about content from a folder of images
         
@@ -163,9 +164,9 @@ class AboutExtractionService:
         logger.debug(f"📁 Found images: {[Path(p).name for p in image_paths]}")
         return image_paths
     
-    async def _extract_texts_from_images(self, 
-                                       image_paths: List[str], 
-                                       parallel: bool = False) -> List[Dict[str, Any]]:
+    async def _extract_texts_from_images(self,
+                                       image_paths: List[str],
+                                       parallel: bool = True) -> List[Dict[str, Any]]:
         """
         Extract text from multiple images using OCR
         
@@ -246,7 +247,7 @@ class AboutExtractionService:
         # Use new v2.0 workflow: Send both images and OCR texts
         about_content = await self._get_claude_service().synthesize_with_images_and_texts(
             image_paths=image_paths,
-            ocr_texts=ocr_texts,
+            texts=ocr_texts,
             system_prompt=synthesis_prompts["system"],
             user_prompt=synthesis_prompts["user"]
         )
@@ -322,12 +323,16 @@ class AboutExtractionService:
     def get_service_status(self) -> Dict[str, Any]:
         """Get service status and configuration"""
         try:
-            claude_status = self._get_claude_service().get_usage_stats()
+            llm_provider = self._get_claude_service()
+            if llm_provider:
+                provider_info = llm_provider.get_provider_info()
+            else:
+                provider_info = {"status": "unavailable"}
         except:
-            claude_status = {"status": "unavailable"}
-            
+            provider_info = {"status": "unavailable"}
+
         return {
-            "claude_status": claude_status,
+            "llm_provider": provider_info,
             "supported_extensions": list(self.supported_extensions),
             "available_formats": self.get_supported_formats(),
             "prompt_categories": self.prompt_manager.get_available_categories()

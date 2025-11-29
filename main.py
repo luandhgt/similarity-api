@@ -33,33 +33,46 @@ async def lifespan(app: FastAPI):
     # Startup logic
     try:
         print("🚀 Starting AI Service...")
-        
+
+        # Initialize ServiceFactory to populate container with all services
+        from core.service_factory import ServiceFactory
+        from core.container import get_container, ServiceNames
+
+        print("📦 Initializing services via ServiceFactory...")
+        await ServiceFactory.initialize_all(verbose=True)
+        container = get_container()
+        print(f"✅ ServiceFactory initialized: {len(container.list_services())} services registered")
+
         # Load image model for similarity
         from models.places365 import get_places365_model
         get_places365_model()
         print("✅ Places365 model loaded")
-        
+
         # Initialize Voyage client for similarity
         from utils.text_processor import get_voyage_client
         get_voyage_client()
         print("✅ Voyage client initialized")
-        
-        # Test Claude service for about extraction
+
+        # Test LLM provider (should already be initialized by ServiceFactory)
         try:
-            from services.claude_service import claude_service
-            status = claude_service.get_usage_stats()
-            print(f"✅ Claude service ready: {status['model']}")
+            llm_provider = container.get(ServiceNames.CLAUDE)
+            if llm_provider:
+                provider_info = llm_provider.get_provider_info()
+                print(f"✅ LLM provider ready: {provider_info['provider']} ({provider_info['model']})")
+            else:
+                print(f"⚠️ LLM provider: Not initialized")
         except Exception as e:
-            print(f"⚠️ Claude service warning: {e}")
+            print(f"⚠️ LLM provider warning: {e}")
         
         # Test configuration loading for about extraction
         try:
-            from utils.prompt_manager import prompt_manager
+            from utils.prompt_manager import PromptManager
             from utils.output_formatter import output_formatter
-            
-            available_prompts = prompt_manager.get_available_categories()
+
+            prompt_manager = PromptManager()
+            available_prompts = prompt_manager.get_available_prompt_categories()
             available_formats = output_formatter.get_available_formats()
-            
+
             print(f"✅ Loaded {len(available_prompts)} prompt categories: {available_prompts}")
             print(f"✅ Loaded {len(available_formats)} output formats: {available_formats}")
         except Exception as e:
@@ -81,17 +94,18 @@ async def lifespan(app: FastAPI):
         # Initialize Event Similarity service
         try:
             from services.event_similarity_service import initialize_event_similarity_service
-            from services.claude_service import get_claude_service
+            from core.container import get_container, ServiceNames
             from utils.text_processor import get_voyage_client
 
-            # Get service dependencies
-            claude_service = get_claude_service()
+            # Get service dependencies using ServiceContainer (multi-provider support)
+            container = get_container()
+            llm_provider = container.get(ServiceNames.CLAUDE)  # Returns ChatGPT or Claude based on config
             voyage_client = get_voyage_client()
             database_service = app.state.database_service
 
             # Initialize service with all dependencies (text-only mode)
             event_similarity_service = initialize_event_similarity_service(
-                claude_service=claude_service,
+                claude_service=llm_provider,  # Actually LLM provider (Claude/ChatGPT/Gemini)
                 voyage_client=voyage_client,
                 database_service=database_service
             )
@@ -185,12 +199,15 @@ async def root():
         from utils.text_processor import get_voyage_client
         voyage_client = get_voyage_client()
         
-        # Check Claude service
-        claude_available = False
+        # Check LLM provider (Claude/ChatGPT/Gemini)
+        llm_available = False
         try:
-            from services.claude_service import claude_service
-            claude_status = claude_service.get_usage_stats()
-            claude_available = True
+            from core.container import get_container, ServiceNames
+            container = get_container()
+            llm_provider = container.get(ServiceNames.CLAUDE)
+            if llm_provider:
+                provider_info = llm_provider.get_provider_info()
+                llm_available = provider_info.get('status') == 'ready'
         except:
             pass
         
@@ -210,7 +227,7 @@ async def root():
                     "endpoints": ["/embed_image", "/embed_text", "/search", "/stats", "/games"]
                 },
                 "about_extraction": {
-                    "description": "Extract and synthesize about content from images using Claude AI",
+                    "description": "Extract and synthesize about content from images using LLM (Claude/ChatGPT/Gemini)",
                     "endpoints": ["/api/extract-about", "/api/extract-about/status", "/api/extract-about/formats"]
                 },
                 "event_similarity": {
@@ -221,7 +238,7 @@ async def root():
             "models_loaded": {
                 "places365": places_model is not None,
                 "voyage": voyage_client is not None,
-                "claude": claude_available,
+                "llm_provider": llm_available,  # Claude/ChatGPT/Gemini based on config
                 "database": database_available,
                 "event_similarity": event_similarity_available
             },
@@ -261,13 +278,22 @@ async def health_check():
         voyage_client = get_voyage_client()
         health_status["services"]["voyage"] = voyage_client is not None
         
-        # Check Claude service
+        # Check LLM provider (Claude/ChatGPT/Gemini)
         try:
-            from services.claude_service import claude_service
-            claude_status = claude_service.get_usage_stats()
-            health_status["services"]["claude"] = True
+            from core.container import get_container, ServiceNames
+            container = get_container()
+            llm_provider = container.get(ServiceNames.CLAUDE)
+            if llm_provider:
+                provider_info = llm_provider.get_provider_info()
+                health_status["services"]["llm_provider"] = {
+                    "available": provider_info.get('status') == 'ready',
+                    "provider": provider_info.get('provider'),
+                    "model": provider_info.get('model')
+                }
+            else:
+                health_status["services"]["llm_provider"] = {"available": False}
         except:
-            health_status["services"]["claude"] = False
+            health_status["services"]["llm_provider"] = {"available": False}
         
         # Check Database service
         if hasattr(app.state, 'database_service') and app.state.database_service:

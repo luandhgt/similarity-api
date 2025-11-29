@@ -46,23 +46,29 @@ async def initialize_services(verbose: bool = True) -> Dict[str, Any]:
         if verbose:
             print(f"{'✅' if services['voyage'] else '❌'} Voyage client: {'initialized' if services['voyage'] else 'failed'}")
 
-        # Initialize Claude service
+        # Initialize LLM provider (Claude/ChatGPT/Gemini based on config)
         if verbose:
-            print("Testing Claude service...")
+            print("Testing LLM provider...")
         try:
-            from services.claude_service import ClaudeService
-            claude_service = ClaudeService()
-            claude_status = claude_service.get_usage_stats()
-            services['claude'] = True
-            services['claude_service'] = claude_service
+            from services.llm_provider_factory import LLMProviderFactory
+            from config import Config
+
+            provider_config = Config.get_llm_provider_config()
+            llm_provider = LLMProviderFactory.create_provider_from_config(provider_config)
+            provider_info = llm_provider.get_provider_info()
+
+            services['claude'] = True  # Keep name for backward compatibility
+            services['claude_service'] = llm_provider  # Keep name for backward compatibility
+            services['llm_provider'] = llm_provider
             if verbose:
-                print(f"✅ Claude service: ready ({claude_status.get('model', 'unknown model')})")
+                print(f"✅ LLM provider: ready ({provider_info.get('provider', 'unknown')} - {provider_info.get('model', 'unknown model')})")
         except Exception as e:
             services['claude'] = False
             services['claude_service'] = None
+            services['llm_provider'] = None
             if verbose:
-                print(f"⚠️ Claude service: {e}")
-                print(f"   Make sure CLAUDE_API_KEY is set in .env file")
+                print(f"⚠️ LLM provider: {e}")
+                print(f"   Make sure API key is set in .env file (CLAUDE_API_KEY or OPENAI_API_KEY)")
 
         # Initialize Database service
         if verbose:
@@ -91,8 +97,8 @@ async def initialize_services(verbose: bool = True) -> Dict[str, Any]:
             # Check if config files exist first
             config_path = Path("config")
             required_configs = [
-                "prompts.yaml",
-                "output_formats.yaml",
+                "event_about_prompts.yaml",
+                "event_about_template.yaml",
                 "similarity_prompts.yaml",
                 "similarity_output_formats.yaml"
             ]

@@ -23,7 +23,7 @@ class ExtractAboutRequest(BaseModel):
     image_count: int = Field(default=0, description="Expected number of images")
     shared_uploads_path: str = Field(..., description="Path to shared uploads directory")
     output_format: str = Field(default="default", description="Output format (default, json_simple, json_detailed, markdown, html)")
-    process_parallel: bool = Field(default=False, description="Whether to process images in parallel")
+    process_parallel: bool = Field(default=True, description="Whether to process images in parallel")
 
 class ExtractAboutResponse(BaseModel):
     success: bool

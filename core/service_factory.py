@@ -126,28 +126,39 @@ class ServiceFactory:
 
     @staticmethod
     async def _init_claude(container: ServiceContainer, verbose: bool) -> bool:
-        """Initialize Claude service"""
+        """Initialize LLM provider (Claude/ChatGPT/Gemini based on config)"""
         if verbose:
-            print("🤖 Testing Claude service...")
+            print(f"🤖 Initializing LLM provider ({config.LLM_PROVIDER})...")
 
         try:
-            from services.claude_service import ClaudeService
+            from services.llm_provider_factory import LLMProviderFactory
 
-            claude_service = ClaudeService()
-            claude_status = claude_service.get_usage_stats()
-            container.register(ServiceNames.CLAUDE, claude_service)
+            # Get provider config from Config
+            provider_config = config.get_llm_provider_config()
+
+            # Create provider using factory
+            llm_provider = LLMProviderFactory.create_provider_from_config(provider_config)
+
+            # Get provider info
+            provider_info = llm_provider.get_provider_info()
+
+            # Register as CLAUDE for backward compatibility
+            container.register(ServiceNames.CLAUDE, llm_provider)
 
             if verbose:
-                model = claude_status.get('model', 'unknown')
-                print(f"✅ Claude service: ready ({model})")
+                provider_name = provider_info.get('provider', 'unknown')
+                model = provider_info.get('model', 'unknown')
+                supports_vision = provider_info.get('supports_vision', False)
+                print(f"✅ {provider_name}: ready ({model})")
+                print(f"   Vision support: {'yes' if supports_vision else 'no'}")
 
             return True
 
         except Exception as e:
-            logger.error(f"Failed to initialize Claude service: {e}")
+            logger.error(f"Failed to initialize LLM provider: {e}")
             if verbose:
-                print(f"⚠️ Claude service: {e}")
-                print("   Make sure CLAUDE_API_KEY is set in .env file")
+                print(f"⚠️ LLM provider: {e}")
+                print(f"   Make sure {config.LLM_PROVIDER.upper()}_API_KEY is set in .env file")
 
             # Don't raise, just return False
             container.register(ServiceNames.CLAUDE, None)
@@ -197,8 +208,8 @@ class ServiceFactory:
             # Check config files exist
             config_path = Path("config")
             required_configs = [
-                "prompts.yaml",
-                "output_formats.yaml",
+                "event_about_prompts.yaml",
+                "event_about_template.yaml",
                 "similarity_prompts.yaml",
                 "similarity_output_formats.yaml"
             ]
@@ -237,28 +248,26 @@ class ServiceFactory:
             # Get dependencies
             claude_service = container.get(ServiceNames.CLAUDE)
             voyage_client = container.get(ServiceNames.VOYAGE_CLIENT)
-            prompt_manager = container.get(ServiceNames.PROMPT_MANAGER)
             database_service = container.get(ServiceNames.DATABASE)
 
             # Check dependencies
             if not claude_service:
-                raise ServiceUnavailableError("Claude service not available")
+                raise ServiceUnavailableError("LLM provider not available")
             if not voyage_client:
                 raise ServiceUnavailableError("Voyage client not available")
             if not database_service:
                 raise ServiceUnavailableError("Database service not available")
 
-            # Create service
+            # Create service (prompts are loaded internally)
             event_similarity_service = EventSimilarityService(
                 claude_service=claude_service,
                 voyage_client=voyage_client,
-                prompt_manager=prompt_manager,
                 database_service=database_service
             )
 
             # Test service
             service_status = await event_similarity_service.get_service_status()
-            is_operational = service_status.get("status") == "operational"
+            is_operational = service_status.get("status") in ["healthy", "operational"]
 
             container.register(ServiceNames.EVENT_SIMILARITY, event_similarity_service)
 
