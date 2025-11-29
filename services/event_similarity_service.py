@@ -272,11 +272,29 @@ class EventSimilarityService:
 
         # Call LLM API (Claude/ChatGPT/Gemini)
         logger.info(f"🔄 Calling LLM API with {len(candidates)} candidates...")
+
+        # DEBUG: Log candidates being sent to LLM
+        logger.info("=" * 60)
+        logger.info("📤 [DEBUG] CANDIDATES SENT TO LLM:")
+        logger.info("=" * 60)
+        logger.info(f"System prompt length: {len(system_prompt)} chars")
+        logger.info(f"User prompt length: {len(user_prompt)} chars")
+        logger.info(f"Candidates text:\n{candidates_text[:2000]}...")  # First 2000 chars
+        logger.info("=" * 60)
+
         response = await self.claude_service.generate_text(
             prompt=user_prompt,
             system_prompt=system_prompt,
             max_tokens=8000
         )
+
+        # DEBUG: Log LLM response
+        logger.info("=" * 60)
+        logger.info("📥 [DEBUG] LLM RESPONSE:")
+        logger.info("=" * 60)
+        logger.info(f"Response length: {len(response)} characters")
+        logger.info(f"Response content:\n{response[:3000]}...")  # First 3000 chars
+        logger.info("=" * 60)
 
         logger.info(f"✅ Claude response received ({len(response)} characters)")
         return response
@@ -389,18 +407,38 @@ class EventSimilarityService:
         Returns:
             Clean JSON string
         """
-        # Try to find JSON in markdown code block
-        json_match = re.search(r'```(?:json)?\s*(\[[\s\S]*?\])\s*```', response)
-        if json_match:
-            return json_match.group(1)
+        # Strip whitespace first
+        response = response.strip()
 
-        # Try to find raw JSON array
-        json_match = re.search(r'(\[[\s\S]*\])', response)
+        # Try to find JSON in markdown code block (greedy match to get full array)
+        # Match from ``` to the last ``` and extract content between them
+        json_match = re.search(r'```(?:json)?\s*(\[[\s\S]*\])\s*```', response)
         if json_match:
-            return json_match.group(1)
+            logger.debug(f"✅ Extracted JSON from markdown code block")
+            return json_match.group(1).strip()
+
+        # If response starts with ```, try to extract content after it
+        if response.startswith('```'):
+            # Remove opening ```json or ```
+            content = re.sub(r'^```(?:json)?\s*', '', response)
+            # Remove closing ``` if present
+            content = re.sub(r'\s*```\s*$', '', content)
+            if content.startswith('['):
+                logger.debug(f"✅ Extracted JSON by stripping markdown markers")
+                return content.strip()
+
+        # Try to find raw JSON array (from first [ to last ])
+        if '[' in response:
+            start_idx = response.find('[')
+            end_idx = response.rfind(']')
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = response[start_idx:end_idx + 1]
+                logger.debug(f"✅ Extracted JSON array from position {start_idx} to {end_idx}")
+                return json_str.strip()
 
         # Return original if no match
-        return response.strip()
+        logger.warning(f"⚠️ Could not extract JSON from response, returning as-is")
+        return response
 
     def _extract_taxonomy_from_first_result(self, similar_events: List[Dict]) -> Dict:
         """

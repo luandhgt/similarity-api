@@ -154,3 +154,15 @@ similarity:
     10. **Strict Format**: The "detail" field must have exactly 4 sections: About (English), About (Tiếng Việt), Taxonomy, Lý giải
 
     Sort results by score (highest first).
+
+    ## ⚠️ RESPONSE FORMAT WARNING ⚠️
+
+    **ABSOLUTELY CRITICAL**: Your response MUST be ONLY a valid JSON array.
+    - DO NOT include any text, explanation, or markdown before or after the JSON.
+    - DO NOT include headers like "# Analysis" or "## Step 1".
+    - DO NOT wrap the JSON in markdown code blocks (```json).
+    - Start your response DIRECTLY with `[` and end with `]`.
+    - If no events match, return an empty array: `[]`
+
+    CORRECT: [{{"event-code": "...", ...}}]
+    WRONG: Here is my analysis:\n```json\n[...]\n```
