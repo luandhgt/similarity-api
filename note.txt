@@ -1,2 +1,29 @@
 conda activate image-similarity-api
 
+                                                                       1. Year of the Rabbit - Rise of Kingdoms (code: 0ec903fe-8fab-4bc3-9795-f89eba956dd7)
+                                                                       2. Winter Encounter - Rise of Kingdoms (code: dd136ffe-9071-4984-9bd5-52542b4ac2ed)
+2025-11-29 23:28:02,126 - services.event_similarity_service - INFO -   3. The Spirits Are Coming - Rise of Kingdoms (code: 2aebf38f-6336-47d8-8f49-4e7cf814893a)
+2025-11-29 23:28:02,126 - services.event_similarity_service - INFO -   4. The Mightiest Governor - Rise of Kingdoms (code: 996163be-6269-4738-9c83-89f5d3815075)
+2025-11-29 23:28:02,126 - services.event_similarity_service - INFO -   5. Spring Celebrations - Rise of Kingdoms (code: 23fa9d8f-26cb-4031-893f-17b785650b4a)
+2025-11-29 23:28:02,126 - services.event_similarity_service - INFO -   6. Spring Breeze - Rise of Kingdoms (code: ed1ae7c6-81d3-4a4b-a0eb-0055b395f61c)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   7. Relics of the Shu Kingdom - Rise of Kingdoms (code: 7c9ea2e4-7254-4224-836c-00c97b6bac21)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   8. Qixi Festival Events - Rise of Kingdoms (code: 6db081cd-556d-4d89-8ebd-9243c98e582f)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   9. Mouth-Watering Zongzi - Rise of Kingdoms (code: b44ecb85-6bd6-4405-b45d-7ddb20f2d695)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   10. Midsummer Fireworks - Rise of Kingdoms (code: f03cab0c-ed51-4bf1-9637-858dc11f37d9)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   11. Lunar New Year - Rise of Kingdoms (code: c0d4b8bc-5820-4ce0-8b8e-9f0d7db5fed4)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   12. Lucky Red Packet - Rise of Kingdoms (code: e705ed5d-9aa9-482b-a4e3-690a5b9ea53a)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   13. Lanterns of Togetherness - Rise of Kingdoms (code: 5284e51b-28a3-443e-9693-2820f491e03e)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   14. Holy Conqueror - Rise of Kingdoms (code: 8f1b4fea-d78c-4f24-93fb-f072d88ae652)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   15. Harvest Festival - Rise of Kingdoms (code: 99531792-fd6e-4983-ada9-618747b75880)
+2025-11-29 23:28:02,127 - services.event_similarity_service - INFO -   16. Great Gathering - Rise of Kingdoms (code: 1e8ff558-b6ab-408a-90fa-b93324c54cf3)
+2025-11-29 23:28:02,128 - services.event_similarity_service - INFO -   17. Ghoulish Graveyard - Rise of Kingdoms (code: 7e3a5e0c-cd05-412d-a133-531d961fdf8d)
+2025-11-29 23:28:02,128 - services.event_similarity_service - INFO -   18. Christmas is Coming! - Rise of Kingdoms (code: dc67d6de-3636-4975-b970-dbd55b5b57f4)
+2025-11-29 23:28:02,128 - services.event_similarity_service - INFO -   19. Astral Gift - Rise of Kingdoms (code: 3ab3d17b-e59b-460d-bec8-178666d933cc)
+
+claude 
+2025-11-29 23:38:02,562 - services.event_similarity_service - INFO - 📊 [TEXT] LLM SIMILARITY RESULTS (sorted by score):
+2025-11-29 23:38:02,562 - services.event_similarity_service - INFO -   1. Score: 92 | Name: Mouth-Watering Zongzi - Rise of Kingdoms | Code: b44ecb85-6bd6-4405-b45d-7ddb20f2d695
+2025-11-29 23:38:02,562 - services.event_similarity_service - INFO -   2. Score: 75 | Name: Holy Conqueror - Rise of Kingdoms | Code: 8f1b4fea-d78c-4f24-93fb-f072d88ae652
+2025-11-29 23:38:02,563 - services.event_similarity_service - INFO -   3. Score: 88 | Name: Harvest Festival - Rise of Kingdoms | Code: 99531792-fd6e-4983-ada9-618747b75880
+2025-11-29 23:38:02,563 - services.event_similarity_service - INFO -   4. Score: 85 | Name: Great Gathering - Rise of Kingdoms | Code: 1e8ff558-b6ab-408a-90fa-b93324c54cf3
+2025-11-29 23:38:02,563 - services.event_similarity_service - INFO -   5. Score: 90 | Name: Astral Gift - Rise of Kingdoms | Code: 3ab3d17b-e59b-460d-bec8-178666d933cc

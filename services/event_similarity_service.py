@@ -169,6 +169,13 @@ class EventSimilarityService:
         )
         logger.info(f"✅ [TEXT] Found {len(name_results)} from name index")
 
+        # Log name results with scores
+        logger.info("=" * 60)
+        logger.info("📊 [TEXT] NAME INDEX RESULTS (sorted by score):")
+        for i, result in enumerate(sorted(name_results, key=lambda x: x.get('score', 0), reverse=True)):
+            logger.info(f"  {i+1}. Index: {result.get('index')} | Score: {result.get('score', 0):.4f}")
+        logger.info("=" * 60)
+
         # Search about index (top 10)
         about_results = search_similar_vectors(
             vector=about_vector,
@@ -177,6 +184,13 @@ class EventSimilarityService:
             top_k=10
         )
         logger.info(f"✅ [TEXT] Found {len(about_results)} from about index")
+
+        # Log about results with scores
+        logger.info("=" * 60)
+        logger.info("📊 [TEXT] ABOUT INDEX RESULTS (sorted by score):")
+        for i, result in enumerate(sorted(about_results, key=lambda x: x.get('score', 0), reverse=True)):
+            logger.info(f"  {i+1}. Index: {result.get('index')} | Score: {result.get('score', 0):.4f}")
+        logger.info("=" * 60)
 
         # Combine and deduplicate
         candidate_faiss_indices = self._combine_search_results(name_results, about_results)
@@ -197,6 +211,15 @@ class EventSimilarityService:
         candidate_events = await self.database_service.get_events_by_faiss_indices(candidate_faiss_indices)
         logger.info(f"✅ [TEXT] Retrieved {len(candidate_events)} candidate events")
 
+        # Log candidate event names
+        logger.info("=" * 60)
+        logger.info("📋 [TEXT] CANDIDATE EVENTS FROM DATABASE:")
+        for i, event in enumerate(candidate_events):
+            event_name_db = event.get('text_embeddings', {}).get('name', {}).get('text_content', 'N/A')
+            event_code = event.get('event_code', 'N/A')
+            logger.info(f"  {i+1}. {event_name_db} (code: {event_code})")
+        logger.info("=" * 60)
+
         # Send to Claude
         logger.info("🔄 [TEXT] Sending to Claude for analysis...")
         claude_response = await self._analyze_with_claude(
@@ -208,6 +231,19 @@ class EventSimilarityService:
         # Parse response
         logger.info("🔄 [TEXT] Parsing Claude response...")
         result = self._parse_claude_response(claude_response, event_name, about)
+
+        # Log LLM results
+        logger.info("=" * 60)
+        logger.info("📊 [TEXT] LLM SIMILARITY RESULTS (sorted by score):")
+        for i, event in enumerate(result.get('similar_events', [])):
+            logger.info(
+                f"  {i+1}. Score: {event.get('score', 0)} | "
+                f"Name: {event.get('event-name', 'N/A')} | "
+                f"Code: {event.get('event-code', 'N/A')}"
+            )
+        if not result.get('similar_events'):
+            logger.info("  (No similar events found)")
+        logger.info("=" * 60)
 
         logger.info(f"✅ [TEXT] Search complete: {len(result['similar_events'])} events from Claude")
         return result
@@ -273,29 +309,20 @@ class EventSimilarityService:
         # Call LLM API (Claude/ChatGPT/Gemini)
         logger.info(f"🔄 Calling LLM API with {len(candidates)} candidates...")
 
-        # DEBUG: Log candidates being sent to LLM
-        logger.info("=" * 60)
-        logger.info("📤 [DEBUG] CANDIDATES SENT TO LLM:")
-        logger.info("=" * 60)
-        logger.info(f"System prompt length: {len(system_prompt)} chars")
-        logger.info(f"User prompt length: {len(user_prompt)} chars")
-        logger.info(f"Candidates text:\n{candidates_text[:2000]}...")  # First 2000 chars
-        logger.info("=" * 60)
+        # # DEBUG: Log candidates being sent to LLM
+        # logger.info("=" * 60)
+        # logger.info("📤 [DEBUG] CANDIDATES SENT TO LLM:")
+        # logger.info("=" * 60)
+        # logger.info(f"System prompt length: {len(system_prompt)} chars")
+        # logger.info(f"User prompt length: {len(user_prompt)} chars")
+        # logger.info(f"Candidates text:\n{candidates_text[:2000]}...")  # First 2000 chars
+        # logger.info("=" * 60)
 
         response = await self.claude_service.generate_text(
             prompt=user_prompt,
             system_prompt=system_prompt,
             max_tokens=8000
         )
-
-        # DEBUG: Log LLM response
-        logger.info("=" * 60)
-        logger.info("📥 [DEBUG] LLM RESPONSE:")
-        logger.info("=" * 60)
-        logger.info(f"Response length: {len(response)} characters")
-        logger.info(f"Response content:\n{response[:3000]}...")  # First 3000 chars
-        logger.info("=" * 60)
-
         logger.info(f"✅ Claude response received ({len(response)} characters)")
         return response
 
