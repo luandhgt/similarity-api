@@ -23,7 +23,6 @@ models/*.pth
 *.tar
 
 # Index files
-index/
 index-bak/
 
 # Logs
