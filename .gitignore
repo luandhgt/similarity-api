@@ -7,7 +7,7 @@ build/
 __pycache__/
 .vscode/
 .idea/
-images/
+/images/
 
 # Environment files - keep example but ignore actual configs
 .env
