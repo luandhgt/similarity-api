@@ -230,7 +230,7 @@ class EventSimilarityService:
 
         # Parse response
         logger.info("🔄 [TEXT] Parsing Claude response...")
-        result = self._parse_claude_response(claude_response, event_name, about)
+        result = self._parse_claude_response(claude_response, event_name, about, candidate_events)
 
         # Log LLM results
         logger.info("=" * 60)
@@ -360,7 +360,8 @@ class EventSimilarityService:
         self,
         claude_response: str,
         query_name: str,
-        query_about: str
+        query_about: str,
+        candidates: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Parse Claude's JSON response into the required format
@@ -369,6 +370,7 @@ class EventSimilarityService:
             claude_response: Raw Claude response string
             query_name: Query event name
             query_about: Query event about text
+            candidates: Original candidate list for cross-checking event codes
 
         Returns:
             Formatted response dictionary
@@ -392,6 +394,10 @@ class EventSimilarityService:
 
             if filtered_count > 0:
                 logger.info(f"🔄 [FILTER] Removed {filtered_count} low-score events (score < 50). Kept {len(similar_events)}/{original_count}")
+
+            # Cross-check and fix event codes using fuzzy match on event names
+            if candidates:
+                similar_events = self._fix_event_codes_by_name_match(similar_events, candidates)
 
             # Build response in expected format
             result = {
@@ -423,6 +429,89 @@ class EventSimilarityService:
                 },
                 "similar_events": []
             }
+
+    def _fix_event_codes_by_name_match(
+        self,
+        similar_events: List[Dict],
+        candidates: List[Dict[str, Any]]
+    ) -> List[Dict]:
+        """
+        Fix event codes by matching event names from LLM response with candidates.
+        Uses fuzzy matching to handle slight differences in names.
+
+        Args:
+            similar_events: Events from LLM response
+            candidates: Original candidate list with correct event codes
+
+        Returns:
+            Similar events with corrected event codes
+        """
+        # Build name -> event_code mapping from candidates
+        candidate_map = {}
+        for candidate in candidates:
+            text_embeddings = candidate.get('text_embeddings', {})
+            name = text_embeddings.get('name', {}).get('text_content', '')
+            event_code = candidate.get('event_code', '')
+            if name and event_code:
+                # Store with normalized name (lowercase, stripped)
+                candidate_map[name.lower().strip()] = {
+                    'event_code': event_code,
+                    'original_name': name
+                }
+
+        fixed_events = []
+        for event in similar_events:
+            llm_name = event.get('event-name', '')
+            llm_code = event.get('event-code', '')
+            llm_name_lower = llm_name.lower().strip()
+
+            # Try exact match first
+            if llm_name_lower in candidate_map:
+                correct_code = candidate_map[llm_name_lower]['event_code']
+                if correct_code != llm_code:
+                    logger.info(f"🔧 [FIX] Corrected event code for '{llm_name}': {llm_code} → {correct_code}")
+                event['event-code'] = correct_code
+                fixed_events.append(event)
+                continue
+
+            # Try fuzzy match - find best matching candidate
+            best_match = None
+            best_ratio = 0
+            for cand_name, cand_data in candidate_map.items():
+                # Simple similarity: count matching characters
+                ratio = self._similarity_ratio(llm_name_lower, cand_name)
+                if ratio > best_ratio:
+                    best_ratio = ratio
+                    best_match = cand_data
+
+            # Accept if similarity >= 80%
+            if best_match and best_ratio >= 0.8:
+                correct_code = best_match['event_code']
+                logger.info(f"🔧 [FIX] Fuzzy matched '{llm_name}' → '{best_match['original_name']}' (similarity: {best_ratio:.0%})")
+                if correct_code != llm_code:
+                    logger.info(f"🔧 [FIX] Corrected event code: {llm_code} → {correct_code}")
+                event['event-code'] = correct_code
+                fixed_events.append(event)
+            else:
+                # No match found - skip this event
+                logger.warning(f"⚠️ [FIX] Could not match event name '{llm_name}' to any candidate (best ratio: {best_ratio:.0%})")
+
+        logger.info(f"🔧 [FIX] Fixed {len(fixed_events)}/{len(similar_events)} events")
+        return fixed_events
+
+    def _similarity_ratio(self, s1: str, s2: str) -> float:
+        """
+        Calculate similarity ratio between two strings using SequenceMatcher.
+
+        Args:
+            s1: First string
+            s2: Second string
+
+        Returns:
+            Similarity ratio between 0 and 1
+        """
+        from difflib import SequenceMatcher
+        return SequenceMatcher(None, s1, s2).ratio()
 
     def _extract_json_from_response(self, response: str) -> str:
         """
@@ -586,6 +675,8 @@ class EventSimilarityService:
         # Step 3: Calculate similarity scores for each event
         logger.info("🔄 Calculating image similarities (brute force)...")
         event_scores = {}
+        events_with_images = 0
+        events_without_images = 0
 
         for i, event in enumerate(all_events, 1):
             event_code = event['event_code']
@@ -597,7 +688,10 @@ class EventSimilarityService:
 
             if len(image_indices) == 0:
                 # Skip events without images
+                events_without_images += 1
                 continue
+
+            events_with_images += 1
 
             # Get vectors from FAISS for this event's images
             event_vectors = []
@@ -632,6 +726,7 @@ class EventSimilarityService:
             if i % 100 == 0:
                 logger.info(f"   Processed {i}/{len(all_events)} events...")
 
+        logger.info(f"📊 [IMAGE] Events with images: {events_with_images}, without images: {events_without_images}")
         logger.info(f"✅ Calculated scores for {len(event_scores)} events with images")
 
         # Step 4: Sort and return top K
