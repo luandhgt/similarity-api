@@ -139,7 +139,11 @@ determine_alternative:
 
     ## RESPONSE FORMAT WARNING
 
-    Your response MUST be ONLY a valid JSON object.
+    **ABSOLUTELY CRITICAL**: Your response MUST be ONLY a valid JSON object.
     - DO NOT include any text, explanation, or markdown before or after the JSON.
-    - Start your response DIRECTLY with the opening brace and end with closing brace
+    - DO NOT include headers like "# Analysis" or "## Step 1".
     - DO NOT wrap the JSON in markdown code blocks.
+    - If no analysis possible, still return the JSON structure with score 0.
+
+    CORRECT: {{"results": [...]}}
+    WRONG: Here is my analysis:\n```json\n...\n```
