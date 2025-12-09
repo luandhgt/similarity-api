@@ -119,6 +119,26 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"⚠️ Event Similarity service warning: {e}")
             app.state.event_similarity_service = None
+
+        # Initialize Determine Alternative service
+        try:
+            from services.determine_alternative_service import initialize_determine_alternative_service
+            from core.container import get_container, ServiceNames
+
+            container = get_container()
+            llm_provider = container.get(ServiceNames.CLAUDE)
+            database_service = app.state.database_service
+
+            determine_alternative_service = initialize_determine_alternative_service(
+                llm_provider=llm_provider,
+                database_service=database_service
+            )
+
+            app.state.determine_alternative_service = determine_alternative_service
+            print("✅ Determine Alternative service ready")
+        except Exception as e:
+            print(f"⚠️ Determine Alternative service warning: {e}")
+            app.state.determine_alternative_service = None
         
         print("✅ API ready")
     except Exception as e:
@@ -173,19 +193,37 @@ async def get_event_similarity_service():
         )
     return app.state.event_similarity_service
 
+
+# Dependency override for determine alternative service
+async def get_determine_alternative_service():
+    """Dependency to provide DetermineAlternativeService instance"""
+    if not hasattr(app.state, 'determine_alternative_service') or app.state.determine_alternative_service is None:
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="DetermineAlternativeService not available. Please check service configuration and try again."
+        )
+    return app.state.determine_alternative_service
+
 # Import and include routers
 from routers.similarity import router as similarity_router
 from routers.about_extraction import router as about_extraction_router
 from routers.event_similarity import router as event_similarity_router
 from routers.event_similarity import get_event_similarity_service as get_event_similarity_service_dep
+from routers.determine_alternative import router as determine_alternative_router
+from routers.determine_alternative import get_determine_alternative_service as get_determine_alternative_service_dep
 
 # Override the dependency in event similarity router
 app.dependency_overrides[get_event_similarity_service_dep] = get_event_similarity_service
+
+# Override the dependency in determine alternative router
+app.dependency_overrides[get_determine_alternative_service_dep] = get_determine_alternative_service
 
 # Include all routers
 app.include_router(similarity_router)
 app.include_router(about_extraction_router)
 app.include_router(event_similarity_router)
+app.include_router(determine_alternative_router)
 
 # Root endpoint
 @app.get("/")
@@ -217,6 +255,9 @@ async def root():
         # Check Event Similarity service
         event_similarity_available = hasattr(app.state, 'event_similarity_service') and app.state.event_similarity_service is not None
         
+        # Check Determine Alternative service
+        determine_alternative_available = hasattr(app.state, 'determine_alternative_service') and app.state.determine_alternative_service is not None
+
         return {
             "service": "AI Service - Similarity, About Extraction & Event Analysis",
             "version": "3.0.0",
@@ -233,14 +274,19 @@ async def root():
                 "event_similarity": {
                     "description": "Comprehensive event similarity analysis with multi-modal search",
                     "endpoints": ["/api/find-similar-events", "/api/find-similar-events/status", "/api/find-similar-events/taxonomy"]
+                },
+                "determine_alternative": {
+                    "description": "Determine if a new event is an alternative of existing candidate events",
+                    "endpoints": ["/api/determine-alternative"]
                 }
             },
             "models_loaded": {
                 "places365": places_model is not None,
                 "voyage": voyage_client is not None,
-                "llm_provider": llm_available,  # Claude/ChatGPT/Gemini based on config
+                "llm_provider": llm_available,
                 "database": database_available,
-                "event_similarity": event_similarity_available
+                "event_similarity": event_similarity_available,
+                "determine_alternative": determine_alternative_available
             },
             "documentation": "/docs"
         }
@@ -314,7 +360,13 @@ async def health_check():
                 health_status["services"]["event_similarity"] = False
         else:
             health_status["services"]["event_similarity"] = False
-        
+
+        # Check Determine Alternative service
+        health_status["services"]["determine_alternative"] = (
+            hasattr(app.state, 'determine_alternative_service') and
+            app.state.determine_alternative_service is not None
+        )
+
         # Overall health based on critical services
         critical_services = ["places365", "voyage"]
         if all(health_status["services"].get(service, False) for service in critical_services):
