@@ -70,11 +70,11 @@ class EventSimilarityService:
 
     async def find_similar_events(
         self,
-        folder_name: str,
+        folder_name: Optional[str],
         game_code: str,
         event_name: str,
         about: str,
-        image_count: int,
+        image_count: Optional[int] = 0,
         shared_uploads_path: str = "/shared/uploads/"
     ) -> Dict[str, Any]:
         """
@@ -87,12 +87,15 @@ class EventSimilarityService:
         4. Enrich with missing data from database
         5. Return combined results with both text_score and image_score
 
+        If no images are provided (folder_name is None or image_count is 0),
+        only text-based search will be performed.
+
         Args:
-            folder_name: Name of folder containing event images
+            folder_name: Name of folder containing event images (optional for text-only search)
             game_code: Game code identifier (e.g., 'candy_crush')
             event_name: Name of the query event
             about: Description of the query event
-            image_count: Expected number of images
+            image_count: Expected number of images (0 for text-only search)
             shared_uploads_path: Base path for shared uploads
 
         Returns:
@@ -108,30 +111,46 @@ class EventSimilarityService:
         # Normalize game code
         normalized_game_code = normalize_game_code(game_code)
 
-        # Get uploaded image paths
-        folder_path = Path(shared_uploads_path) / folder_name
-        if not folder_path.exists():
-            raise FileNotFoundError(f"Folder not found: {folder_path}")
+        # Check if we have images to process
+        uploaded_image_paths = []
+        has_images = folder_name is not None and image_count and image_count > 0
 
-        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
-        uploaded_image_paths = [
-            str(f) for f in folder_path.iterdir()
-            if f.is_file() and f.suffix.lower() in image_extensions
-        ]
+        if has_images:
+            # Get uploaded image paths
+            folder_path = Path(shared_uploads_path) / folder_name
+            if not folder_path.exists():
+                logger.warning(f"⚠️ Folder not found: {folder_path} - proceeding with text-only search")
+                has_images = False
+            else:
+                image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
+                uploaded_image_paths = [
+                    str(f) for f in folder_path.iterdir()
+                    if f.is_file() and f.suffix.lower() in image_extensions
+                ]
 
-        if len(uploaded_image_paths) != image_count:
-            logger.warning(f"⚠️ Image count mismatch: expected {image_count}, found {len(uploaded_image_paths)}")
+                if len(uploaded_image_paths) != image_count:
+                    logger.warning(f"⚠️ Image count mismatch: expected {image_count}, found {len(uploaded_image_paths)}")
 
-        logger.info(f"✅ Found {len(uploaded_image_paths)} images in folder")
+                if len(uploaded_image_paths) == 0:
+                    logger.warning(f"⚠️ No images found in folder - proceeding with text-only search")
+                    has_images = False
+                else:
+                    logger.info(f"✅ Found {len(uploaded_image_paths)} images in folder")
 
-        # Run text and image search IN PARALLEL
-        logger.info("🚀 Starting PARALLEL text + image search...")
-        text_result, image_scores = await asyncio.gather(
-            self._search_by_text(event_name, about, normalized_game_code),
-            self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=10)
-        )
-
-        logger.info("✅ Both searches complete. Merging results...")
+        if has_images:
+            # Run text and image search IN PARALLEL
+            logger.info("🚀 Starting PARALLEL text + image search...")
+            text_result, image_scores = await asyncio.gather(
+                self._search_by_text(event_name, about, normalized_game_code),
+                self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=10)
+            )
+            logger.info("✅ Both searches complete. Merging results...")
+        else:
+            # Text-only search
+            logger.info("🚀 Starting TEXT-ONLY search (no images provided)...")
+            text_result = await self._search_by_text(event_name, about, normalized_game_code)
+            image_scores = {}
+            logger.info("✅ Text search complete.")
 
         # Merge results
         merged_result = await self._merge_text_and_image_results(

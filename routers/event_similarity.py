@@ -57,22 +57,22 @@ class SimilarEvent(BaseModel):
 
 class FindSimilarEventsRequest(BaseModel):
     """Request model for finding similar events"""
-    folder_name: str = Field(..., description="Name of the folder containing event images")
+    folder_name: Optional[str] = Field(None, description="Name of the folder containing event images (optional if searching by text only)")
     game_code: str = Field(..., description="Game code identifier (e.g., 'candy_crush')")
     event_name: str = Field(..., description="Name of the event")
     about: str = Field(..., description="Event description/about content")
-    image_count: int = Field(..., gt=0, description="Expected number of images for validation")
+    image_count: Optional[int] = Field(default=0, ge=0, description="Expected number of images (0 or omit for text-only search)")
     shared_uploads_path: str = Field(default="/shared/uploads/", description="Base path for shared uploads")
-    
-    @validator('folder_name')
+
+    @validator('folder_name', pre=True, always=True)
     def validate_folder_name(cls, v):
-        """Validate folder name format"""
-        if not v or not v.strip():
-            raise ValueError("Folder name cannot be empty")
+        """Validate folder name format - allow None/empty for text-only search"""
+        if v is None or not v or not str(v).strip():
+            return None
         # Remove any path separators for security
         clean_name = Path(v).name
         if not clean_name:
-            raise ValueError("Invalid folder name")
+            return None
         return clean_name
     
     @validator('game_code')
@@ -294,43 +294,54 @@ async def validate_request(
     """
     try:
         logger.info(f"Validating request for folder: {request.folder_name}")
-        
+
+        # Check if this is a text-only search (no folder/images)
+        if request.folder_name is None or not request.image_count:
+            return {
+                "status": "valid",
+                "message": "Text-only search mode (no images)",
+                "folder_path": None,
+                "image_files": [],
+                "search_mode": "text_only"
+            }
+
         # Construct full folder path
         folder_path = Path(request.shared_uploads_path) / request.folder_name
-        
+
         # Check if folder exists
         if not folder_path.exists():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Folder not found: {folder_path}"
             )
-        
+
         # Check if folder contains images
         image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
         image_files = [
-            f for f in folder_path.iterdir() 
+            f for f in folder_path.iterdir()
             if f.is_file() and f.suffix.lower() in image_extensions
         ]
-        
+
         if len(image_files) == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No image files found in the specified folder"
             )
-        
+
         if len(image_files) != request.image_count:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Image count mismatch: expected {request.image_count}, found {len(image_files)}"
             )
-        
+
         return {
             "status": "valid",
             "message": f"Found {len(image_files)} images in folder {request.folder_name}",
             "folder_path": str(folder_path),
-            "image_files": [f.name for f in image_files]
+            "image_files": [f.name for f in image_files],
+            "search_mode": "text_and_image"
         }
-        
+
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
