@@ -1,42 +1,76 @@
 # Determine Alternative Prompts
 # This configuration is for comparing a new event with candidate events to determine if it's an alternative
+# Based on Re-release & Re-skin Guide
 
 determine_alternative:
   system: |
     You are an expert event analyst for mobile game events.
 
-    Your task is to determine whether a NEW event is an ALTERNATIVE (similar/repeated version) of existing candidate events.
+    Your task is to determine whether a NEW event is an ALTERNATIVE (re-release/reskin) of existing candidate events.
 
-    ## WHAT IS AN ALTERNATIVE?
+    ## OFFICIAL DEFINITIONS (from Re-release & Re-skin Guide)
 
-    An event is considered an ALTERNATIVE of another event if:
-    1. They have the same or very similar mechanics/gameplay
-    2. They have the same or similar reward structures
-    3. They have the same or similar event format/flow
-    4. They may have different themes, names, or graphics but core gameplay is the same
+    ### Re-releases
+    A previous release where subsequent releases do NOT have any changes to:
+    - Name
+    - Theme
+    - Graphics
+    - Mechanics
+
+    ### Reskins
+    A release that has been previously released in the same game, often with:
+    - New name
+    - New theme
+    - New graphics
+    But the CORE MECHANICS remain the same.
+
+    ## RERELEASE CHANGE TYPES
+
+    | Type | Definition |
+    |------|------------|
+    | **None** | A previous release 'reruns' with NO changes |
+    | **Redesign** | The visual design and/or theme has changed |
+    | **Rename** | An alternate title or name of a release changes |
+    | **Reprice** | IAP cost increases or decreases |
+    | **Restructure** | Notable changes, additions, or removal of mechanics or rewards |
+    | **Other** | Other changes not listed |
+
+    ## KEY PRINCIPLE
+
+    An event is an ALTERNATIVE if it shares the SAME CORE MECHANICS even if:
+    - The name is different (Rename)
+    - The theme/graphics are different (Redesign)
+    - The rewards are slightly different
+    - The pricing changed (Reprice)
+
+    An event is NOT an alternative if:
+    - The core mechanics are fundamentally different
+    - The event type/family is different
+    - The gameplay flow is completely different
 
     ## SCORING CRITERIA (0-100)
 
-    **90-100**: Nearly identical - Same mechanics, same format, possibly different theme/name
-    **70-89**: Very similar - Core mechanics match, minor differences in rewards or format
-    **50-69**: Moderately similar - Same event family, some shared mechanics
-    **30-49**: Somewhat related - Same general category but notable differences
-    **0-29**: Not similar - Different event type or mechanics
+    **90-100**: Re-release (None) - Exact same event, no changes at all
+    **80-89**: Rename only - Same mechanics, different name
+    **70-79**: Redesign - Same mechanics, different theme/graphics
+    **60-69**: Restructure (minor) - Same core mechanics with minor reward/mechanic tweaks
+    **50-59**: Restructure (moderate) - Same event family, noticeable changes but still recognizable
+    **30-49**: Similar category - Same general type but significant differences
+    **0-29**: Not an alternative - Different event type or mechanics
 
     ## ANALYSIS APPROACH
 
-    For each candidate event:
-    1. Compare the event mechanics and gameplay
-    2. Compare the reward structures
-    3. Compare the event format/progression
-    4. Determine if new event is a re-release, redesign, or different event
-    5. Assign a similarity score
-    6. Provide clear reasoning in Vietnamese
+    For each candidate event, analyze:
+    1. **Mechanics**: Are the core gameplay mechanics the same?
+    2. **Event Flow**: Is the progression/structure similar?
+    3. **Rewards System**: Is the reward structure similar?
+    4. **Event Family**: Do they belong to the same event category?
+    5. **Determine Change Type**: None, Redesign, Rename, Reprice, Restructure, or Not Alternative
 
   user: |
     ## DETERMINE ALTERNATIVE TASK
 
-    Analyze whether the NEW event is an ALTERNATIVE of the candidate events.
+    Analyze whether the NEW event is an ALTERNATIVE (re-release/reskin) of the candidate events.
 
     **GAME:** {game_code}
 
@@ -52,6 +86,13 @@ determine_alternative:
     - Name: {candidate_2_name}
     - About: {candidate_2_about}
 
+    ## ANALYSIS INSTRUCTIONS
+
+    For each candidate, determine:
+    1. Is the NEW event a re-release/reskin of this candidate?
+    2. What type of change is it? (None, Redesign, Rename, Reprice, Restructure, or Not Alternative)
+    3. Explain why in Vietnamese
+
     ## REQUIRED OUTPUT FORMAT
 
     Return ONLY a valid JSON object with this EXACT structure:
@@ -63,13 +104,15 @@ determine_alternative:
           "candidate_index": 0,
           "is_alternative": true,
           "score": 85,
-          "reason": "Giải thích chi tiết bằng tiếng Việt tại sao event mới là/không là alternative của candidate này"
+          "change_type": "Redesign",
+          "reason": "Giải thích chi tiết bằng tiếng Việt: Event mới có cùng cơ chế gameplay (thu thập điểm qua nhiệm vụ hàng ngày), cùng cấu trúc phần thưởng, chỉ khác theme và hình ảnh. Đây là một Redesign của event gốc."
         }},
         {{
           "candidate_index": 1,
           "is_alternative": false,
           "score": 25,
-          "reason": "Giải thích chi tiết bằng tiếng Việt"
+          "change_type": "Not Alternative",
+          "reason": "Giải thích chi tiết bằng tiếng Việt: Event mới có cơ chế hoàn toàn khác biệt..."
         }}
       ]
     }}
@@ -77,11 +120,15 @@ determine_alternative:
 
     ## CRITICAL REQUIREMENTS:
 
-    1. **is_alternative**: Set to `true` if score >= 50, otherwise `false`
-    2. **score**: 0-100, based on similarity criteria above
-    3. **reason**: MUST be in Vietnamese, explain why the new event is/isn't an alternative
-    4. **candidate_index**: 0 for first candidate, 1 for second candidate
-    5. **ALWAYS return results for BOTH candidates**
+    1. **is_alternative**: Set to `true` if score >= 50 (is a re-release/reskin), otherwise `false`
+    2. **score**: 0-100, based on scoring criteria above
+    3. **change_type**: One of: "None", "Redesign", "Rename", "Reprice", "Restructure", "Not Alternative"
+    4. **reason**: MUST be in Vietnamese, explain:
+       - What mechanics are the same/different
+       - What type of change this is
+       - Why it is/isn't an alternative
+    5. **candidate_index**: 0 for first candidate, 1 for second candidate
+    6. **ALWAYS return results for BOTH candidates**
 
     ## RESPONSE FORMAT WARNING
 

@@ -114,6 +114,7 @@ class DetermineAlternativeService:
                 "event_name": candidate['name'],
                 "is_alternative": llm_result.get('is_alternative', False),
                 "score": llm_result.get('score', 0),
+                "change_type": llm_result.get('change_type', 'Not Alternative'),
                 "reason": llm_result.get('reason', 'Không thể phân tích'),
                 "images": formatted_images
             })
@@ -207,6 +208,7 @@ class DetermineAlternativeService:
                     "candidate_index": result.get('candidate_index', 0),
                     "is_alternative": result.get('is_alternative', False),
                     "score": int(result.get('score', 0)),
+                    "change_type": result.get('change_type', 'Not Alternative'),
                     "reason": result.get('reason', '')
                 })
 
@@ -277,6 +279,7 @@ class DetermineAlternativeService:
             "candidate_index": index,
             "is_alternative": False,
             "score": 0,
+            "change_type": "Not Alternative",
             "reason": "Không có kết quả phân tích từ LLM"
         }
 
