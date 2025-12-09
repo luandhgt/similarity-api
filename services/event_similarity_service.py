@@ -154,6 +154,17 @@ class EventSimilarityService:
         Returns:
             Dict with query_event and similar_events (max 20, from Claude)
         """
+        # If about is empty, skip text search entirely (rely on image search only)
+        if not about or not about.strip():
+            logger.info("⚠️ [TEXT] About text is empty - skipping text search (will use image search only)")
+            return {
+                "query_event": {
+                    "name": event_name,
+                    "about": about or ""
+                },
+                "similar_events": []
+            }
+
         logger.info("🔄 [TEXT] Extracting text embeddings...")
         name_vector = extract_text_features(event_name, self.voyage_client)
         about_vector = extract_text_features(about, self.voyage_client)
