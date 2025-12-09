@@ -141,5 +141,5 @@ determine_alternative:
 
     Your response MUST be ONLY a valid JSON object.
     - DO NOT include any text, explanation, or markdown before or after the JSON.
-    - Start your response DIRECTLY with `{` and end with `}`
+    - Start your response DIRECTLY with the opening brace and end with closing brace
     - DO NOT wrap the JSON in markdown code blocks.
