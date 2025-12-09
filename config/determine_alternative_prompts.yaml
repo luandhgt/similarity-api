@@ -104,15 +104,15 @@ determine_alternative:
           "candidate_index": 0,
           "is_alternative": true,
           "score": 85,
-          "change_type": "Redesign",
-          "reason": "Giải thích chi tiết bằng tiếng Việt: Event mới có cùng cơ chế gameplay (thu thập điểm qua nhiệm vụ hàng ngày), cùng cấu trúc phần thưởng, chỉ khác theme và hình ảnh. Đây là một Redesign của event gốc."
+          "change_types": ["Redesign", "Rename"],
+          "reason": "Giải thích chi tiết bằng tiếng Việt: Event mới có cùng cơ chế gameplay (thu thập điểm qua nhiệm vụ hàng ngày), cùng cấu trúc phần thưởng, nhưng đổi tên và theme/hình ảnh. Đây là Redesign + Rename của event gốc."
         }},
         {{
           "candidate_index": 1,
           "is_alternative": false,
           "score": 25,
-          "change_type": "Not Alternative",
-          "reason": "Giải thích chi tiết bằng tiếng Việt: Event mới có cơ chế hoàn toàn khác biệt..."
+          "change_types": [],
+          "reason": "Giải thích chi tiết bằng tiếng Việt: Event mới có cơ chế hoàn toàn khác biệt, không phải alternative..."
         }}
       ]
     }}
@@ -122,10 +122,17 @@ determine_alternative:
 
     1. **is_alternative**: Set to `true` if score >= 50 (is a re-release/reskin), otherwise `false`
     2. **score**: 0-100, based on scoring criteria above
-    3. **change_type**: One of: "None", "Redesign", "Rename", "Reprice", "Restructure", "Not Alternative"
+    3. **change_types**: Array of applicable change types. Can include MULTIPLE values:
+       - "None" - No changes (exact re-release)
+       - "Redesign" - Visual/theme changed
+       - "Rename" - Name changed
+       - "Reprice" - Price changed
+       - "Restructure" - Mechanics/rewards changed
+       - Empty array [] if not an alternative
+       - Example: ["Redesign", "Rename"] if both name AND theme changed
     4. **reason**: MUST be in Vietnamese, explain:
        - What mechanics are the same/different
-       - What type of change this is
+       - What type(s) of change this is
        - Why it is/isn't an alternative
     5. **candidate_index**: 0 for first candidate, 1 for second candidate
     6. **ALWAYS return results for BOTH candidates**

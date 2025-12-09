@@ -72,9 +72,9 @@ class AlternativeResult(BaseModel):
     event_name: str = Field(..., description="Candidate event name")
     is_alternative: bool = Field(..., description="Whether new event is an alternative of this candidate")
     score: int = Field(..., ge=0, le=100, description="Similarity score (0-100)")
-    change_type: str = Field(
-        default="Not Alternative",
-        description="Type of change: None, Redesign, Rename, Reprice, Restructure, or Not Alternative"
+    change_types: List[str] = Field(
+        default=[],
+        description="List of change types: None, Redesign, Rename, Reprice, Restructure (can have multiple)"
     )
     reason: str = Field(..., description="Explanation from LLM (in Vietnamese)")
     images: List[EventImage] = Field(default=[], description="List of event images")

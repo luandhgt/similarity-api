@@ -114,7 +114,7 @@ class DetermineAlternativeService:
                 "event_name": candidate['name'],
                 "is_alternative": llm_result.get('is_alternative', False),
                 "score": llm_result.get('score', 0),
-                "change_type": llm_result.get('change_type', 'Not Alternative'),
+                "change_types": llm_result.get('change_types', []),
                 "reason": llm_result.get('reason', 'Không thể phân tích'),
                 "images": formatted_images
             })
@@ -204,11 +204,17 @@ class DetermineAlternativeService:
             # Validate and normalize results
             normalized = []
             for result in results:
+                # Handle change_types - ensure it's a list
+                change_types = result.get('change_types', [])
+                if isinstance(change_types, str):
+                    # If LLM returns string instead of array, convert it
+                    change_types = [change_types] if change_types else []
+
                 normalized.append({
                     "candidate_index": result.get('candidate_index', 0),
                     "is_alternative": result.get('is_alternative', False),
                     "score": int(result.get('score', 0)),
-                    "change_type": result.get('change_type', 'Not Alternative'),
+                    "change_types": change_types,
                     "reason": result.get('reason', '')
                 })
 
@@ -279,7 +285,7 @@ class DetermineAlternativeService:
             "candidate_index": index,
             "is_alternative": False,
             "score": 0,
-            "change_type": "Not Alternative",
+            "change_types": [],
             "reason": "Không có kết quả phân tích từ LLM"
         }
 
