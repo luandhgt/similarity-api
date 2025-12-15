@@ -160,11 +160,29 @@ similarity:
        - **About (English)**: The original English description from candidate event
        - **About (Tiếng Việt)**: Vietnamese translation of the about text
        - **Taxonomy**: Family, Dynamics, Rewards values (each on separate line)
-       - **Lý giải**: Detailed explanation in Vietnamese similar to determine_alternative format, explaining:
-         * What core mechanics are the same between query and candidate event
-         * What type of changes exist (Redesign, Rename, Restructure, etc)
-         * Why this event is similar/alternative to the query event
-         * Use detailed Vietnamese explanation style like in determine_alternative
+       - **Lý giải**: MUST follow this EXACT structure (write 3-4 sentences in Vietnamese):
+
+         **SENTENCE 1 (REQUIRED)**: Start with "Event '[Query Event Name]' và '[Candidate Event Name]' đều..."
+         - MUST mention BOTH event names explicitly
+         - Explain the CORE MECHANIC that is the SAME between both events
+         - Focus on gameplay loop, not taxonomy categories
+
+         **SENTENCE 2 (REQUIRED)**: Provide MORE DETAILS about similarities
+         - Specific features, structures, progression systems that are identical
+         - Examples: "Cả hai đều có cấu trúc shop chia tầng...", "Đều yêu cầu đăng nhập hàng ngày..."
+
+         **SENTENCE 3 (REQUIRED)**: Explain what is DIFFERENT
+         - Point out differences in theme, name, graphics, or minor mechanics
+         - Emphasize these differences DON'T change the core mechanics
+         - Example: "Sự khác biệt chủ yếu nằm ở chủ đề (X thay vì Y), đồ họa và tên gọi..."
+
+         **SENTENCE 4 (REQUIRED)**: CONCLUSION with change types
+         - State the change type(s): Redesign, Rename, Restructure, etc.
+         - Explain WHY it's considered an alternative/similar event
+         - Example: "Vì vậy đây là một bản Redesign + Rename, điểm tương đồng cao, nên được xem là alternative."
+
+         **DO NOT** mention taxonomy categories (Family/Dynamics/Rewards) - these are already in the Taxonomy section
+         **DO NOT** start with vague phrases like "Sự kiện này..." - always use specific event names
 
     Sort results by score (highest first).
 
