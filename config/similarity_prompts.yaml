@@ -98,6 +98,16 @@ similarity:
 
     **Restructure**: Notable changes, additions, or removal of mechanics or rewards
 
+    ## SCORING CRITERIA (0-100)
+
+    **90-100**: Re-release (None) - Exact same event, no changes at all
+    **80-89**: Rename only - Same mechanics, different name
+    **70-79**: Redesign - Same mechanics, different theme/graphics
+    **60-69**: Restructure (minor) - Same core mechanics with minor reward/mechanic tweaks
+    **50-59**: Restructure (moderate) - Same event family, noticeable changes but still recognizable
+    **30-49**: Similar category - Same general type but significant differences
+    **0-29**: Not similar - Different event type or mechanics (do not include in results)
+
     ## YOUR TASK PROCESS
 
     **STEP 1: ASSIGN TAXONOMY TO ALL EVENTS**
@@ -133,7 +143,7 @@ similarity:
         "event-code": "event-code-uuid-from-candidate",
         "event-name": "EXACT Name from candidate",
         "score": 85,
-        "detail": "Family: [value] | Dynamics: [value] | Rewards: [value]"
+        "detail": "**About (English):**\n[Original English about text]\n\n**About (Tiếng Việt):**\n[Vietnamese translation]\n\n**Taxonomy:**\nFamily: [value]\nDynamics: [value]\nRewards: [value]\n\n**Lý giải:**\n[Detailed Vietnamese explanation explaining why this event is similar to the query event, what mechanics are the same, what change types apply (Redesign, Rename, Restructure, etc), and why it matches]"
       }}
     ]
     ```
@@ -146,7 +156,15 @@ similarity:
     4. **Minimum Score Threshold**: ONLY return events with score >= 50
     5. **Event Code**: MUST copy the EXACT "Event Code" UUID from the candidate list
     6. **Event Name**: MUST copy the EXACT "Name" text from the candidate list
-    7. **Detail Format**: Only include taxonomy values in format "Family: X | Dynamics: Y | Rewards: Z"
+    7. **Detail Format**: MUST include 4 sections:
+       - **About (English)**: The original English description from candidate event
+       - **About (Tiếng Việt)**: Vietnamese translation of the about text
+       - **Taxonomy**: Family, Dynamics, Rewards values (each on separate line)
+       - **Lý giải**: Detailed explanation in Vietnamese similar to determine_alternative format, explaining:
+         * What core mechanics are the same between query and candidate event
+         * What type of changes exist (Redesign, Rename, Restructure, etc)
+         * Why this event is similar/alternative to the query event
+         * Use detailed Vietnamese explanation style like in determine_alternative
 
     Sort results by score (highest first).
 

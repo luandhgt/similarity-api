@@ -11,9 +11,9 @@ formats:
     example: |
       [
         {
-          "event-name": "Tên event tương tự",
+          "event-name": "Holiday Special Gift",
           "score": 85,
-          "detail": "**About (English):**\nOriginal English description of the event...\n\n**About (Tiếng Việt):**\nBản dịch tiếng Việt của mô tả event...\n\n**Taxonomy:**\nFamily: Competitions\nDynamics: Individualistic & competitive\nRewards: Currencies & items\n\n**Lý giải:**\nGiải thích chi tiết bằng tiếng Việt về lý do event này tương tự với query event..."
+          "detail": "**About (English):**\nLog in daily for 15 days to receive special rewards including exclusive winter transmog, gold, and premium currency.\n\n**About (Tiếng Việt):**\nĐăng nhập hàng ngày trong 15 ngày để nhận các phần thưởng đặc biệt bao gồm trang phục mùa đông độc quyền, vàng và tiền tệ cao cấp.\n\n**Taxonomy:**\nFamily: Rewards\nDynamics: Individualistic\nRewards: Items\n\n**Lý giải:**\nEvent 'Holiday Special Gift' và 'Update Special 15-Day Check-in Reward' đều dựa trên cơ chế đăng nhập hàng ngày để nhận thưởng. Tuy nhiên, event mới bổ sung thêm cơ chế tích lũy 'Ameria's Luck' để mở rộng mốc phần thưởng, đồng thời có chủ đề mùa lễ hội (Giáng Sinh) với giao diện, biểu tượng và phần thưởng đặc biệt (transmog mùa đông). Đây là sự thay đổi vừa về giao diện/theme (Redesign), vừa đổi tên (Rename), đồng thời có chỉnh sửa cấu trúc phần thưởng và thêm tầng tiến trình mới (Restructure). Cơ chế cốt lõi vẫn là check-in và tích lũy điểm nên đây là một biến thể (alternative) của event gốc."
         }
       ]
 
