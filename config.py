@@ -6,6 +6,7 @@ Loads environment variables and provides typed configuration access.
 """
 
 import os
+import platform
 from pathlib import Path
 from typing import List, Optional
 from dotenv import load_dotenv
@@ -15,7 +16,7 @@ import logging
 env_mode = os.getenv('ENV', 'development')
 env_file = f'.env.{env_mode}'
 
-# Try to load environment-specific file first, fallback to .env
+# Load environment-specific file first (.env.development or .env.production)
 if Path(env_file).exists():
     load_dotenv(env_file)
     print(f"Loaded configuration from {env_file}")
@@ -24,6 +25,19 @@ elif Path('.env').exists():
     print("Loaded configuration from .env")
 else:
     print("Warning: No .env file found, using environment variables")
+
+# Auto-detect OS and load OS-specific env file to override paths
+os_type = platform.system().lower()
+if 'windows' in os_type or os_type == 'win32':
+    os_env_file = '.env.windows'
+else:  # Linux, Darwin (macOS), etc.
+    os_env_file = '.env.ubuntu'
+
+if Path(os_env_file).exists():
+    load_dotenv(os_env_file, override=True)
+    print(f"Loaded OS-specific configuration from {os_env_file}")
+else:
+    print(f"Warning: OS-specific file {os_env_file} not found")
 
 
 class Config:
