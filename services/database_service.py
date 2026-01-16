@@ -200,27 +200,29 @@ class DatabaseService:
             logger.error(f"Error querying text embeddings by event codes: {e}")
             return []
     
-    async def get_events_by_faiss_indices(self, faiss_indices: List[int]) -> List[Dict[str, Any]]:
+    async def get_events_by_faiss_indices(self, faiss_indices: List[int], game_code: str = None) -> List[Dict[str, Any]]:
         """
         Get event data by FAISS indices from text_embeddings table
-        
+
         Args:
             faiss_indices: List of FAISS index integers
-            
+            game_code: Game code to filter results (e.g., 'summoners_war')
+
         Returns:
             List of combined event data with text embeddings
         """
         if not faiss_indices:
             return []
-        
+
         if not self.pool:
             logger.error("Database connection pool not initialized")
             return []
-        
+
         try:
             async with self.pool.acquire() as conn:
+                # Build query with optional game_code filter
                 query = """
-                    SELECT 
+                    SELECT
                         e.id as event_id,
                         e.code as event_code,
                         e.game_code,
@@ -238,10 +240,16 @@ class DatabaseService:
                     FROM text_embeddings te
                     JOIN events e ON e.code = te.event_code
                     WHERE te.faiss_index = ANY($1::int[])
-                    ORDER BY e.created_at DESC, te.content_type
                 """
-                
-                rows = await conn.fetch(query, faiss_indices)
+
+                params = [faiss_indices]
+                if game_code:
+                    query += " AND e.game_code = $2"
+                    params.append(game_code)
+
+                query += " ORDER BY e.created_at DESC, te.content_type"
+
+                rows = await conn.fetch(query, *params)
                 
                 # Group by event_code
                 events_dict = {}

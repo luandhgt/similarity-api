@@ -236,9 +236,9 @@ class EventSimilarityService:
                 "similar_events": []
             }
 
-        # Get event details from database
-        logger.info(f"🔄 [TEXT] Fetching {len(candidate_faiss_indices)} candidates from database...")
-        candidate_events = await self.database_service.get_events_by_faiss_indices(candidate_faiss_indices)
+        # Get event details from database (filter by game_code to avoid cross-game results)
+        logger.info(f"🔄 [TEXT] Fetching {len(candidate_faiss_indices)} candidates from database for game: {normalized_game_code}...")
+        candidate_events = await self.database_service.get_events_by_faiss_indices(candidate_faiss_indices, game_code=normalized_game_code)
         logger.info(f"✅ [TEXT] Retrieved {len(candidate_events)} candidate events")
 
         # Log candidate event names
