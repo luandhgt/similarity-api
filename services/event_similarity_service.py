@@ -21,6 +21,7 @@ import re
 import numpy as np
 import asyncio
 
+from config import config
 from services.llm_provider_base import BaseLLMProvider
 from services.database_service import DatabaseService
 from utils.text_processor import extract_text_features, VoyageClient
@@ -141,14 +142,14 @@ class EventSimilarityService:
             # Run text and image search IN PARALLEL
             logger.info("🚀 Starting PARALLEL text + image search...")
             text_result, image_scores = await asyncio.gather(
-                self._search_by_text(event_name, about, normalized_game_code),
-                self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=10)
+                self._search_by_text(event_name, about, normalized_game_code, game_code),
+                self._search_by_image(uploaded_image_paths, game_code, normalized_game_code, top_k=config.TOP_K_RESULTS)
             )
             logger.info("✅ Both searches complete. Merging results...")
         else:
             # Text-only search
             logger.info("🚀 Starting TEXT-ONLY search (no images provided)...")
-            text_result = await self._search_by_text(event_name, about, normalized_game_code)
+            text_result = await self._search_by_text(event_name, about, normalized_game_code, game_code)
             image_scores = {}
             logger.info("✅ Text search complete.")
 
@@ -165,13 +166,20 @@ class EventSimilarityService:
         self,
         event_name: str,
         about: str,
-        normalized_game_code: str
+        normalized_game_code: str,
+        original_game_code: str
     ) -> Dict[str, Any]:
         """
         Text-only search (original implementation)
 
+        Args:
+            event_name: Query event name
+            about: Query event description
+            normalized_game_code: Normalized game code for FAISS file (e.g., 'rise_of_kingdoms')
+            original_game_code: Original game code for database queries (e.g., 'Rise of Kingdoms')
+
         Returns:
-            Dict with query_event and similar_events (max 20, from Claude)
+            Dict with query_event and similar_events (from LLM analysis)
         """
         # If about is empty, skip text search entirely (rely on image search only)
         if not about or not about.strip():
@@ -184,34 +192,17 @@ class EventSimilarityService:
                 "similar_events": []
             }
 
-        logger.info("🔄 [TEXT] Extracting text embeddings...")
-        name_vector = extract_text_features(event_name, self.voyage_client)
+        logger.info("🔄 [TEXT] Extracting text embedding for about...")
         about_vector = extract_text_features(about, self.voyage_client)
 
-        logger.info("🔄 [TEXT] Searching FAISS indices...")
+        logger.info("🔄 [TEXT] Searching FAISS about index...")
 
-        # Search name index (top 10)
-        name_results = search_similar_vectors(
-            vector=name_vector,
-            content_type="name",
-            game_code=normalized_game_code,
-            top_k=10
-        )
-        logger.info(f"✅ [TEXT] Found {len(name_results)} from name index")
-
-        # Log name results with scores
-        logger.info("=" * 60)
-        logger.info("📊 [TEXT] NAME INDEX RESULTS (sorted by score):")
-        for i, result in enumerate(sorted(name_results, key=lambda x: x.get('score', 0), reverse=True)):
-            logger.info(f"  {i+1}. Index: {result.get('index')} | Score: {result.get('score', 0):.4f}")
-        logger.info("=" * 60)
-
-        # Search about index (top 10)
+        # Search about index only (name index removed - not useful for similarity)
         about_results = search_similar_vectors(
             vector=about_vector,
             content_type="about",
             game_code=normalized_game_code,
-            top_k=10
+            top_k=config.TOP_K_RESULTS
         )
         logger.info(f"✅ [TEXT] Found {len(about_results)} from about index")
 
@@ -222,11 +213,15 @@ class EventSimilarityService:
             logger.info(f"  {i+1}. Index: {result.get('index')} | Score: {result.get('score', 0):.4f}")
         logger.info("=" * 60)
 
-        # Combine and deduplicate
-        candidate_faiss_indices = self._combine_search_results(name_results, about_results)
-        logger.info(f"✅ [TEXT] Combined to {len(candidate_faiss_indices)} unique candidates")
+        # Use about indices only (name index removed)
+        indices_by_type = {
+            'name': [],  # Empty - no longer using name index
+            'about': list(set(result['index'] for result in about_results))
+        }
+        total_unique = len(indices_by_type['about'])
+        logger.info(f"✅ [TEXT] Found {total_unique} unique about indices")
 
-        if len(candidate_faiss_indices) == 0:
+        if total_unique == 0:
             logger.warning("⚠️ [TEXT] No similar events found")
             return {
                 "query_event": {
@@ -236,16 +231,21 @@ class EventSimilarityService:
                 "similar_events": []
             }
 
-        # Get event details from database (filter by game_code to avoid cross-game results)
-        logger.info(f"🔄 [TEXT] Fetching {len(candidate_faiss_indices)} candidates from database for game: {normalized_game_code}...")
-        candidate_events = await self.database_service.get_events_by_faiss_indices(candidate_faiss_indices, game_code=normalized_game_code)
-        logger.info(f"✅ [TEXT] Retrieved {len(candidate_events)} candidate events")
+        # Get event details from database (filter by game_code and content_type)
+        # Use original_game_code for DB query (e.g., "Rise of Kingdoms"), not normalized (e.g., "rise_of_kingdoms")
+        logger.info(f"🔄 [TEXT] Fetching candidates from database for game: {original_game_code}...")
+        candidate_events = await self.database_service.get_events_by_faiss_indices_typed(
+            indices_by_type=indices_by_type,
+            game_code=original_game_code
+        )
+        logger.info(f"✅ [TEXT] Retrieved {len(candidate_events)} unique candidate events")
 
         # Log candidate event names
         logger.info("=" * 60)
         logger.info("📋 [TEXT] CANDIDATE EVENTS FROM DATABASE:")
         for i, event in enumerate(candidate_events):
-            event_name_db = event.get('text_embeddings', {}).get('name', {}).get('text_content', 'N/A')
+            # Use event_name from events table, fallback to text_embeddings.name if available
+            event_name_db = event.get('event_name') or event.get('text_embeddings', {}).get('name', {}).get('text_content', 'N/A')
             event_code = event.get('event_code', 'N/A')
             logger.info(f"  {i+1}. {event_name_db} (code: {event_code})")
         logger.info("=" * 60)
@@ -282,27 +282,29 @@ class EventSimilarityService:
         self,
         name_results: List[Dict],
         about_results: List[Dict]
-    ) -> List[int]:
+    ) -> Dict[str, List[int]]:
         """
-        Combine and deduplicate FAISS search results from name and about indices
+        Combine FAISS search results from name and about indices, keeping them separate.
+
+        IMPORTANT: NAME index and ABOUT index are SEPARATE FAISS files.
+        Index 19 from NAME refers to a DIFFERENT event than index 19 from ABOUT.
+        We must track content_type to query database correctly.
 
         Args:
             name_results: Results from name index search
             about_results: Results from about index search
 
         Returns:
-            List of unique FAISS indices
+            Dict with 'name' and 'about' keys, each containing list of FAISS indices
         """
-        # Collect unique FAISS indices
-        indices_set = set()
+        # Keep indices separate by content_type
+        name_indices = list(set(result['index'] for result in name_results))
+        about_indices = list(set(result['index'] for result in about_results))
 
-        for result in name_results:
-            indices_set.add(result['index'])
-
-        for result in about_results:
-            indices_set.add(result['index'])
-
-        return list(indices_set)
+        return {
+            'name': name_indices,
+            'about': about_indices
+        }
 
     async def _analyze_with_claude(
         self,

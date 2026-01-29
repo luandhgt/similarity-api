@@ -54,6 +54,8 @@ class Config:
     # API KEYS
     # =============================================================================
     VOYAGE_API_KEY: str = os.getenv('VOYAGE_API_KEY', '')
+    OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY', '')
+    COHERE_API_KEY: str = os.getenv('COHERE_API_KEY', '')
     CLAUDE_API_KEY: str = os.getenv('CLAUDE_API_KEY', '')
 
     # =============================================================================
@@ -125,7 +127,12 @@ class Config:
     # =============================================================================
     # TEXT EMBEDDING CONFIGURATION
     # =============================================================================
-    VOYAGE_MODEL: str = os.getenv('VOYAGE_MODEL', 'voyage-2')
+    # Embedding provider selection: "voyage", "openai", "cohere"
+    EMBEDDING_PROVIDER: str = os.getenv('EMBEDDING_PROVIDER', 'voyage')
+    EMBEDDING_MODEL: str = os.getenv('EMBEDDING_MODEL', '')  # Empty = use default for provider
+
+    # Legacy Voyage config (kept for backward compatibility)
+    VOYAGE_MODEL: str = os.getenv('VOYAGE_MODEL', 'voyage-3-large')
     VOYAGE_INPUT_TYPE: str = os.getenv('VOYAGE_INPUT_TYPE', 'document')
     TEXT_EMBEDDING_DIMENSION: int = int(os.getenv('TEXT_EMBEDDING_DIMENSION', '1024'))
 

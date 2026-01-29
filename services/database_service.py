@@ -286,7 +286,126 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Error querying events by FAISS indices: {e}")
             return []
-    
+
+    async def get_events_by_faiss_indices_typed(
+        self,
+        indices_by_type: Dict[str, List[int]],
+        game_code: str = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get event data by FAISS indices WITH content_type filter.
+        Returns ALL text_embeddings (name AND about) for matched events.
+
+        IMPORTANT: NAME index and ABOUT index are SEPARATE FAISS files.
+        Index 19 from NAME refers to a DIFFERENT event than index 19 from ABOUT.
+        This method correctly queries by (faiss_index, content_type) pairs,
+        then fetches ALL text_embeddings for the matched events.
+
+        Args:
+            indices_by_type: Dict with 'name' and 'about' keys, each containing list of FAISS indices
+            game_code: Game code to filter results (e.g., 'Rise of Kingdoms')
+
+        Returns:
+            List of unique events with ALL text embeddings (name + about)
+        """
+        name_indices = indices_by_type.get('name', [])
+        about_indices = indices_by_type.get('about', [])
+
+        if not name_indices and not about_indices:
+            return []
+
+        if not self.pool:
+            logger.error("Database connection pool not initialized")
+            return []
+
+        try:
+            async with self.pool.acquire() as conn:
+                # Step 1: Find event_codes that match the search criteria
+                # This correctly filters by (faiss_index, content_type) pairs
+                find_events_query = """
+                    SELECT DISTINCT te.event_code
+                    FROM text_embeddings te
+                    JOIN events e ON e.code = te.event_code
+                    WHERE (
+                        (te.content_type = 'name' AND te.faiss_index = ANY($1::int[]))
+                        OR
+                        (te.content_type = 'about' AND te.faiss_index = ANY($2::int[]))
+                    )
+                """
+                params = [name_indices or [], about_indices or []]
+                if game_code:
+                    find_events_query += " AND e.game_code = $3"
+                    params.append(game_code)
+
+                event_codes_rows = await conn.fetch(find_events_query, *params)
+                matched_event_codes = [str(row["event_code"]) for row in event_codes_rows]
+
+                if not matched_event_codes:
+                    logger.info("No events found matching the FAISS indices")
+                    return []
+
+                # Step 2: Get ALL text_embeddings for the matched events
+                # This ensures we have both name AND about for each event
+                fetch_all_query = """
+                    SELECT
+                        e.id as event_id,
+                        e.code as event_code,
+                        e.game_code,
+                        e.name as event_name,
+                        e.search_key,
+                        e.author,
+                        e.publish_date,
+                        e.created_at as event_created_at,
+                        te.id as embedding_id,
+                        te.content_type,
+                        te.text_content,
+                        te.text_length,
+                        te.faiss_index,
+                        te.created_at as embedding_created_at
+                    FROM text_embeddings te
+                    JOIN events e ON e.code = te.event_code
+                    WHERE e.code = ANY($1::uuid[])
+                    ORDER BY e.created_at DESC, te.content_type
+                """
+
+                rows = await conn.fetch(fetch_all_query, matched_event_codes)
+
+                # Group by event_code to get unique events with ALL embeddings
+                events_dict = {}
+                for row in rows:
+                    event_code = str(row["event_code"])
+
+                    if event_code not in events_dict:
+                        events_dict[event_code] = {
+                            "event_id": row["event_id"],
+                            "event_code": event_code,
+                            "game_code": row["game_code"],
+                            "event_name": row["event_name"],
+                            "search_key": row["search_key"],
+                            "author": row["author"],
+                            "publish_date": row["publish_date"].isoformat() if row["publish_date"] else None,
+                            "event_created_at": row["event_created_at"].isoformat() if row["event_created_at"] else None,
+                            "text_embeddings": {}
+                        }
+
+                    # Add text embedding (now includes ALL types: name, about, etc.)
+                    content_type = row["content_type"]
+                    events_dict[event_code]["text_embeddings"][content_type] = {
+                        "embedding_id": row["embedding_id"],
+                        "text_content": row["text_content"],
+                        "text_length": row["text_length"],
+                        "faiss_index": row["faiss_index"],
+                        "embedding_created_at": row["embedding_created_at"].isoformat() if row["embedding_created_at"] else None
+                    }
+
+                results = list(events_dict.values())
+                logger.info(f"Retrieved {len(results)} unique events with ALL embeddings (searched: name={len(name_indices)}, about={len(about_indices)})")
+                return results
+
+        except Exception as e:
+            logger.error(f"Error querying events by typed FAISS indices: {e}")
+            return []
+
     async def get_all_events_for_game(self, game_code: str) -> List[Dict[str, Any]]:
         """
         Get all events for a specific game

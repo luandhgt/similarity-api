@@ -80,6 +80,37 @@ similarity:
 
     **Real prize**: Rewards based on real prizes
 
+    ## ⚠️ MECHANIC-FIRST COMPARISON (CRITICAL)
+
+    **CORE PRINCIPLE**: Similarity is determined by GAMEPLAY MECHANICS, not theme/name/graphics.
+
+    When comparing events, ask these questions IN ORDER:
+
+    1. **PROGRESSION STRUCTURE** (most important):
+       - Sequential stages vs continuous play?
+       - Linear progression vs open tasks?
+       - Map-based vs point-based?
+
+    2. **WIN CONDITION**:
+       - Complete all stages vs accumulate points?
+       - Speed-based ranking vs score-based ranking?
+       - PvE (vs environment/AI) vs PvP (vs real players)?
+
+    3. **REWARD MECHANISM**:
+       - Stage completion rewards vs ranking rewards?
+       - Milestone-based vs threshold-based?
+
+    **MECHANIC COMPARISON EXAMPLES**:
+    - Event A: Sequential stages → speed ranking → milestone rewards
+    - Event B: Sequential stages → speed ranking → milestone rewards → SAME MECHANICS ✅ (score 80+)
+    - Event C: PvP combat → Victory Points → no stages → DIFFERENT MECHANICS ❌ (score <50)
+
+    **CRITICAL**: Two events with the SAME core mechanics (progression + win condition + rewards)
+    should score HIGHER than events that merely share theme or name similarity.
+
+    Even if Event C has a similar NAME or THEME to Event A, it should score LOWER than Event B
+    because Event B has the same MECHANICS.
+
     ## SIMILARITY CRITERIA (from Re-release & Re-skin Guide)
 
     Two events are considered SIMILAR if they share the SAME TAXONOMY and have similar content.
@@ -98,15 +129,22 @@ similarity:
 
     **Restructure**: Notable changes, additions, or removal of mechanics or rewards
 
-    ## SCORING CRITERIA (0-100)
+    ## SCORING CRITERIA (0-100) - MECHANIC-BASED
 
-    **90-100**: Re-release (None) - Exact same event, no changes at all
-    **80-89**: Rename only - Same mechanics, different name
-    **70-79**: Redesign - Same mechanics, different theme/graphics
-    **60-69**: Restructure (minor) - Same core mechanics with minor reward/mechanic tweaks
-    **50-59**: Restructure (moderate) - Same event family, noticeable changes but still recognizable
-    **30-49**: Similar category - Same general type but significant differences
-    **0-29**: Not similar - Different event type or mechanics (do not include in results)
+    **HIGHEST PRIORITY: Core mechanics match (progression structure + win condition)**
+
+    **90-100**: Re-release (None) - Exact same event, identical mechanics, no changes
+    **85-89**: Same core mechanics (progression + win condition) with only name change
+    **80-84**: Same core mechanics with theme/graphics change (Redesign)
+    **70-79**: Same core mechanics with minor reward structure tweaks
+    **60-69**: Same progression type but different win condition OR same win condition but different progression
+    **50-59**: Same taxonomy but noticeably different mechanics
+    **0-49**: Different core mechanics - DO NOT INCLUDE (even if same theme/name)
+
+    **SCORING RULE**:
+    - Events with SAME progression structure AND SAME win condition = minimum score 70
+    - Events with DIFFERENT progression structure OR DIFFERENT win condition = maximum score 59
+    - PvP events are NOT similar to PvE/stage-based events regardless of other factors
 
     ## YOUR TASK PROCESS
 
@@ -133,6 +171,8 @@ similarity:
     **CANDIDATE EVENTS ({candidate_count} total):**
     {candidates}
 
+    ⚠️ **IMPORTANT**: The above list contains ALL {candidate_count} events you can choose from. You MUST NOT return any event that is not in this list. Each event has a number [1], [2], [3]... - only these events exist for this analysis.
+
     ## REQUIRED OUTPUT FORMAT
 
     Return a JSON array with this EXACT structure. Only include events that match the query event's taxonomy.
@@ -152,10 +192,23 @@ similarity:
 
     1. **Taxonomy Assignment**: Assign taxonomy to ALL events (query + candidates) first
     2. **Filtering**: ONLY include candidates with EXACTLY matching taxonomy as query event
-    3. **Score**: Calculate similarity 0-100 based on taxonomy match and content similarity
+    3. **MECHANIC-FIRST Scoring** (⚠️ CRITICAL):
+       - First identify the CORE MECHANICS: progression structure + win condition
+       - Events with SAME core mechanics = score 70-100
+       - Events with DIFFERENT core mechanics = score 0-59 (usually exclude)
+       - Example: "stage-based + speed ranking" is NOT similar to "PvP + Victory Points"
     4. **Minimum Score Threshold**: ONLY return events with score >= 50
     5. **Event Code**: MUST copy the EXACT "Event Code" UUID from the candidate list
     6. **Event Name**: MUST copy the EXACT "Name" text from the candidate list
+
+    ## ⛔ ANTI-HALLUCINATION RULES (CRITICAL):
+    - **ONLY** return events that appear in the CANDIDATE EVENTS list above
+    - **NEVER** invent or generate event names from your training data
+    - **NEVER** return events like "Deadly Dash", "War of the Ruins", "Weathered Brilliance" unless they LITERALLY appear in the candidate list
+    - Before including ANY event, VERIFY it exists as one of the numbered candidates [1], [2], [3], etc.
+    - If the candidate list has 20 events, you can ONLY return events from those 20 - no exceptions
+    - **VALIDATION CHECK**: For each result, ask yourself: "Can I point to the exact [#] number in the candidate list?" If not, DO NOT include it.
+
     7. **Detail Format**: MUST include 4 sections:
        - **About (English)**: The original English description from candidate event
        - **About (Tiếng Việt)**: Vietnamese translation of the about text
