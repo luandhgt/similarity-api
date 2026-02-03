@@ -47,8 +47,8 @@ class ServiceFactory:
             # 1. Places365 Model
             results['places365'] = await ServiceFactory._init_places365(container, verbose)
 
-            # 2. Voyage Client
-            results['voyage'] = await ServiceFactory._init_voyage(container, verbose)
+            # 2. Embedding Provider (Voyage, OpenAI, Cohere based on EMBEDDING_PROVIDER env)
+            results['embedding_provider'] = await ServiceFactory._init_embedding_provider(container, verbose)
 
             # 3. Claude Service
             results['claude'] = await ServiceFactory._init_claude(container, verbose)
@@ -101,28 +101,32 @@ class ServiceFactory:
             raise ServiceUnavailableError("Places365", str(e))
 
     @staticmethod
-    async def _init_voyage(container: ServiceContainer, verbose: bool) -> bool:
-        """Initialize Voyage client"""
+    async def _init_embedding_provider(container: ServiceContainer, verbose: bool) -> bool:
+        """Initialize Embedding Provider (Voyage, OpenAI, Cohere based on EMBEDDING_PROVIDER env)"""
         if verbose:
-            print("🚀 Initializing Voyage client...")
+            print(f"🚀 Initializing Embedding Provider ({config.EMBEDDING_PROVIDER})...")
 
         try:
-            from utils.text_processor import get_voyage_client
+            from utils.text_processor import get_embedding_provider
 
-            voyage_client = get_voyage_client()
-            container.register(ServiceNames.VOYAGE_CLIENT, voyage_client)
+            embedding_provider = get_embedding_provider()
+            provider_info = embedding_provider.get_provider_info()
+
+            container.register(ServiceNames.EMBEDDING_PROVIDER, embedding_provider)
 
             if verbose:
-                status = "✅" if voyage_client else "❌"
-                print(f"{status} Voyage client: {'initialized' if voyage_client else 'failed'}")
+                provider_name = provider_info.get('provider', 'unknown')
+                model = provider_info.get('model', 'unknown')
+                dimensions = provider_info.get('dimensions', 'unknown')
+                print(f"✅ Embedding Provider: {provider_name} ({model}, {dimensions}d)")
 
-            return voyage_client is not None
+            return embedding_provider is not None
 
         except Exception as e:
-            logger.error(f"Failed to initialize Voyage client: {e}")
+            logger.error(f"Failed to initialize Embedding Provider: {e}")
             if verbose:
-                print(f"❌ Voyage client failed: {e}")
-            raise ServiceUnavailableError("Voyage", str(e))
+                print(f"❌ Embedding Provider failed: {e}")
+            raise ServiceUnavailableError("EmbeddingProvider", str(e))
 
     @staticmethod
     async def _init_claude(container: ServiceContainer, verbose: bool) -> bool:
@@ -247,21 +251,21 @@ class ServiceFactory:
 
             # Get dependencies
             claude_service = container.get(ServiceNames.CLAUDE)
-            voyage_client = container.get(ServiceNames.VOYAGE_CLIENT)
+            embedding_provider = container.get(ServiceNames.EMBEDDING_PROVIDER)
             database_service = container.get(ServiceNames.DATABASE)
 
             # Check dependencies
             if not claude_service:
                 raise ServiceUnavailableError("LLM provider not available")
-            if not voyage_client:
-                raise ServiceUnavailableError("Voyage client not available")
+            if not embedding_provider:
+                raise ServiceUnavailableError("Embedding provider not available")
             if not database_service:
                 raise ServiceUnavailableError("Database service not available")
 
             # Create service (prompts are loaded internally)
             event_similarity_service = EventSimilarityService(
                 claude_service=claude_service,
-                voyage_client=voyage_client,
+                embedding_provider=embedding_provider,
                 database_service=database_service
             )
 
@@ -336,7 +340,7 @@ class ServiceFactory:
         if required_services is None:
             required_services = [
                 ServiceNames.PLACES365,
-                ServiceNames.VOYAGE_CLIENT,
+                ServiceNames.EMBEDDING_PROVIDER,
                 ServiceNames.CLAUDE,
                 ServiceNames.DATABASE,
                 ServiceNames.EVENT_SIMILARITY

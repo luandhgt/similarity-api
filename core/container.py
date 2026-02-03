@@ -158,7 +158,8 @@ def get_container() -> ServiceContainer:
 class ServiceNames:
     """Constants for service names"""
     PLACES365 = "places365"
-    VOYAGE_CLIENT = "voyage_client"
+    EMBEDDING_PROVIDER = "embedding_provider"  # Supports Voyage, OpenAI, Cohere based on EMBEDDING_PROVIDER env
+    VOYAGE_CLIENT = "voyage_client"  # Deprecated: use EMBEDDING_PROVIDER instead
     CLAUDE = "claude"
     DATABASE = "database"
     EVENT_SIMILARITY = "event_similarity"

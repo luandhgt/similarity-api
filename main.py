@@ -48,10 +48,11 @@ async def lifespan(app: FastAPI):
         get_places365_model()
         print("✅ Places365 model loaded")
 
-        # Initialize Voyage client for similarity
-        from utils.text_processor import get_voyage_client
-        get_voyage_client()
-        print("✅ Voyage client initialized")
+        # Initialize Embedding provider for similarity (Voyage, OpenAI, Cohere based on EMBEDDING_PROVIDER env)
+        from utils.text_processor import get_embedding_provider
+        embedding_provider = get_embedding_provider()
+        provider_info = embedding_provider.get_provider_info()
+        print(f"✅ Embedding provider initialized: {provider_info['provider']} ({provider_info['model']}, {provider_info['dimensions']}d)")
 
         # Test LLM provider (should already be initialized by ServiceFactory)
         try:
@@ -95,18 +96,18 @@ async def lifespan(app: FastAPI):
         try:
             from services.event_similarity_service import initialize_event_similarity_service
             from core.container import get_container, ServiceNames
-            from utils.text_processor import get_voyage_client
+            from utils.text_processor import get_embedding_provider
 
             # Get service dependencies using ServiceContainer (multi-provider support)
             container = get_container()
             llm_provider = container.get(ServiceNames.CLAUDE)  # Returns ChatGPT or Claude based on config
-            voyage_client = get_voyage_client()
+            embedding_provider = get_embedding_provider()
             database_service = app.state.database_service
 
             # Initialize service with all dependencies (text-only mode)
             event_similarity_service = initialize_event_similarity_service(
                 claude_service=llm_provider,  # Actually LLM provider (Claude/ChatGPT/Gemini)
-                voyage_client=voyage_client,
+                embedding_provider=embedding_provider,
                 database_service=database_service
             )
 
@@ -234,8 +235,8 @@ async def root():
         from models.places365 import get_places365_model
         places_model = get_places365_model()
         
-        from utils.text_processor import get_voyage_client
-        voyage_client = get_voyage_client()
+        from utils.text_processor import get_embedding_provider
+        embedding_provider = get_embedding_provider()
         
         # Check LLM provider (Claude/ChatGPT/Gemini)
         llm_available = False
@@ -282,7 +283,7 @@ async def root():
             },
             "models_loaded": {
                 "places365": places_model is not None,
-                "voyage": voyage_client is not None,
+                "embedding_provider": embedding_provider is not None,
                 "llm_provider": llm_available,
                 "database": database_available,
                 "event_similarity": event_similarity_available,
@@ -296,9 +297,9 @@ async def root():
             "status": "error",
             "error": str(e),
             "models_loaded": {
-                "places365": False, 
-                "voyage": False, 
-                "claude": False,
+                "places365": False,
+                "embedding_provider": False,
+                "llm_provider": False,
                 "database": False,
                 "event_similarity": False
             }
@@ -320,9 +321,15 @@ async def health_check():
         places_model = get_places365_model()
         health_status["services"]["places365"] = places_model is not None
         
-        from utils.text_processor import get_voyage_client  
-        voyage_client = get_voyage_client()
-        health_status["services"]["voyage"] = voyage_client is not None
+        from utils.text_processor import get_embedding_provider
+        embedding_provider = get_embedding_provider()
+        embedding_info = embedding_provider.get_provider_info() if embedding_provider else {}
+        health_status["services"]["embedding_provider"] = {
+            "available": embedding_provider is not None,
+            "provider": embedding_info.get('provider'),
+            "model": embedding_info.get('model'),
+            "dimensions": embedding_info.get('dimensions')
+        }
         
         # Check LLM provider (Claude/ChatGPT/Gemini)
         try:
@@ -368,8 +375,9 @@ async def health_check():
         )
 
         # Overall health based on critical services
-        critical_services = ["places365", "voyage"]
-        if all(health_status["services"].get(service, False) for service in critical_services):
+        critical_services = ["places365"]
+        embedding_ok = health_status["services"].get("embedding_provider", {}).get("available", False)
+        if all(health_status["services"].get(service, False) for service in critical_services) and embedding_ok:
             health_status["status"] = "healthy"
         else:
             health_status["status"] = "degraded"

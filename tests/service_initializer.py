@@ -36,15 +36,20 @@ async def initialize_services(verbose: bool = True) -> Dict[str, Any]:
         if verbose:
             print(f"{'✅' if services['places365'] else '❌'} Places365 model: {'loaded' if services['places365'] else 'failed'}")
 
-        # Initialize Voyage client
+        # Initialize Embedding provider (Voyage, OpenAI, Cohere based on EMBEDDING_PROVIDER env)
         if verbose:
-            print("Initializing Voyage client...")
-        from utils.text_processor import get_voyage_client
-        voyage_client = get_voyage_client()
-        services['voyage'] = voyage_client is not None
-        services['voyage_client'] = voyage_client
+            print("Initializing Embedding provider...")
+        from utils.text_processor import get_embedding_provider
+        embedding_provider = get_embedding_provider()
+        embedding_info = embedding_provider.get_provider_info() if embedding_provider else {}
+        services['embedding_provider'] = embedding_provider is not None
+        services['embedding_provider_instance'] = embedding_provider
+        # Keep 'voyage' for backward compatibility in test validation
+        services['voyage'] = embedding_provider is not None
         if verbose:
-            print(f"{'✅' if services['voyage'] else '❌'} Voyage client: {'initialized' if services['voyage'] else 'failed'}")
+            provider_name = embedding_info.get('provider', 'unknown')
+            model = embedding_info.get('model', 'unknown')
+            print(f"{'✅' if services['embedding_provider'] else '❌'} Embedding provider: {provider_name} ({model})")
 
         # Initialize LLM provider (Claude/ChatGPT/Gemini based on config)
         if verbose:
@@ -114,24 +119,19 @@ async def initialize_services(verbose: bool = True) -> Dict[str, Any]:
 
             # Import required classes
             from services.event_similarity_service import EventSimilarityService
-            from utils.prompt_manager import PromptManager
 
             # Check that all dependencies are available
             if not services.get('claude_service'):
                 raise Exception("Claude service not available")
-            if not services.get('voyage_client'):
-                raise Exception("Voyage client not available")
+            if not services.get('embedding_provider_instance'):
+                raise Exception("Embedding provider not available")
             if not services.get('database_service'):
                 raise Exception("Database service not available")
-
-            # Initialize PromptManager
-            prompt_manager = PromptManager()
 
             # Create service instance with ALL required dependencies
             event_similarity_service = EventSimilarityService(
                 claude_service=services['claude_service'],
-                voyage_client=services['voyage_client'],
-                prompt_manager=prompt_manager,
+                embedding_provider=services['embedding_provider_instance'],
                 database_service=services['database_service']
             )
 

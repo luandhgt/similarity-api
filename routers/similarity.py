@@ -9,7 +9,7 @@ from typing import Optional, List
 
 # Import processors
 from utils.image_processor import extract_image_features, validate_image_file
-from utils.text_processor import extract_text_features, validate_text_input, get_voyage_client
+from utils.text_processor import extract_text_features, validate_text_input, get_embedding_provider
 from utils.faiss_manager import (
     add_vector_to_faiss, 
     search_similar_vectors,
@@ -307,11 +307,15 @@ async def model_info():
     try:
         from models.places365 import get_places365_model
         places_model = get_places365_model()
-        
+
         # Count parameters
         total_params = sum(p.numel() for p in places_model.parameters())
         trainable_params = sum(p.numel() for p in places_model.parameters() if p.requires_grad)
-        
+
+        # Get embedding provider info
+        embedding_provider = get_embedding_provider()
+        embedding_info = embedding_provider.get_provider_info() if embedding_provider else {}
+
         return {
             "models": {
                 "places365": {
@@ -322,11 +326,12 @@ async def model_info():
                     "trainable_parameters": trainable_params,
                     "loaded": True
                 },
-                "voyage": {
-                    "name": "Voyage-3-Large",
-                    "vector_dimension": 1024,
+                "embedding_provider": {
+                    "provider": embedding_info.get('provider', 'unknown'),
+                    "model": embedding_info.get('model', 'unknown'),
+                    "vector_dimension": embedding_info.get('dimensions', 0),
                     "content_types": ["about", "name"],
-                    "loaded": get_voyage_client() is not None
+                    "loaded": embedding_provider is not None
                 }
             },
             "supported_content_types": CONTENT_TYPES
@@ -334,5 +339,5 @@ async def model_info():
     except Exception as e:
         return {
             "error": str(e),
-            "models": {"places365": {"loaded": False}, "voyage": {"loaded": False}}
+            "models": {"places365": {"loaded": False}, "embedding_provider": {"loaded": False}}
         }

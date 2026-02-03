@@ -24,7 +24,8 @@ import asyncio
 from config import config
 from services.llm_provider_base import BaseLLMProvider
 from services.database_service import DatabaseService
-from utils.text_processor import extract_text_features, VoyageClient
+from utils.text_processor import extract_text_features
+from services.embedding_provider_base import BaseEmbeddingProvider
 from utils.faiss_manager import search_similar_vectors, normalize_game_code, get_vector_by_index
 from utils.image_processor import extract_image_features
 
@@ -37,7 +38,7 @@ class EventSimilarityService:
     def __init__(
         self,
         claude_service: BaseLLMProvider,  # Actually LLM provider (Claude/ChatGPT/Gemini)
-        voyage_client: VoyageClient,
+        embedding_provider: BaseEmbeddingProvider,
         database_service: DatabaseService
     ):
         """
@@ -45,11 +46,11 @@ class EventSimilarityService:
 
         Args:
             claude_service: LLM provider instance (Claude/ChatGPT/Gemini based on config)
-            voyage_client: Voyage embedding client instance
+            embedding_provider: Embedding provider instance (Voyage/OpenAI/Cohere based on EMBEDDING_PROVIDER env)
             database_service: Database service instance
         """
         self.claude_service = claude_service  # Keep name for backward compatibility
-        self.voyage_client = voyage_client
+        self.embedding_provider = embedding_provider
         self.database_service = database_service
 
         # Load prompts from YAML config
@@ -193,7 +194,7 @@ class EventSimilarityService:
             }
 
         logger.info("🔄 [TEXT] Extracting text embedding for about...")
-        about_vector = extract_text_features(about, self.voyage_client)
+        about_vector = extract_text_features(about, embedding_provider=self.embedding_provider)
 
         logger.info("🔄 [TEXT] Searching FAISS about index...")
 
@@ -959,16 +960,18 @@ class EventSimilarityService:
                 provider_info = self.claude_service.get_provider_info()
                 llm_ready = provider_info.get('status') == 'ready'
 
-            # Check Voyage client
-            voyage_ready = self.voyage_client is not None
+            # Check Embedding provider
+            embedding_ready = self.embedding_provider is not None
+            embedding_info = self.embedding_provider.get_provider_info() if embedding_ready else {}
 
             return {
-                "status": "healthy" if (db_connected and llm_ready and voyage_ready) else "degraded",
+                "status": "healthy" if (db_connected and llm_ready and embedding_ready) else "degraded",
                 "database_connected": db_connected,
                 "faiss_indexes_loaded": {},  # TODO: Add FAISS status check
                 "models_loaded": {
                     "llm_provider": llm_ready,  # Claude/ChatGPT/Gemini based on config
-                    "voyage": voyage_ready
+                    "embedding_provider": embedding_ready,
+                    "embedding_info": embedding_info
                 },
                 "message": "Event similarity service ready (text-only mode)"
             }
@@ -980,8 +983,8 @@ class EventSimilarityService:
                 "database_connected": False,
                 "faiss_indexes_loaded": {},
                 "models_loaded": {
-                    "claude": False,
-                    "voyage": False
+                    "llm_provider": False,
+                    "embedding_provider": False
                 },
                 "message": f"Service status check failed: {str(e)}"
             }
@@ -999,7 +1002,7 @@ def get_event_similarity_service() -> Optional[EventSimilarityService]:
 
 def initialize_event_similarity_service(
     claude_service: BaseLLMProvider,  # Actually LLM provider (Claude/ChatGPT/Gemini)
-    voyage_client: VoyageClient,
+    embedding_provider: BaseEmbeddingProvider,
     database_service: DatabaseService
 ) -> EventSimilarityService:
     """
@@ -1007,7 +1010,7 @@ def initialize_event_similarity_service(
 
     Args:
         claude_service: LLM provider instance (Claude/ChatGPT/Gemini based on config)
-        voyage_client: Voyage embedding client instance
+        embedding_provider: Embedding provider instance (Voyage/OpenAI/Cohere based on EMBEDDING_PROVIDER env)
         database_service: Database service instance
 
     Returns:
@@ -1016,7 +1019,7 @@ def initialize_event_similarity_service(
     global _service_instance
     _service_instance = EventSimilarityService(
         claude_service=claude_service,
-        voyage_client=voyage_client,
+        embedding_provider=embedding_provider,
         database_service=database_service
     )
     logger.info("✅ Global EventSimilarityService instance initialized")
