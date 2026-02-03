@@ -5,15 +5,13 @@ Extracted from original main.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import time
-from typing import Optional, List
 
 # Import processors
 from utils.image_processor import extract_image_features, validate_image_file
 from utils.text_processor import extract_text_features, validate_text_input, get_embedding_provider
 from utils.faiss_manager import (
-    add_vector_to_faiss, 
-    search_similar_vectors,
-    get_faiss_stats, 
+    add_vector_to_faiss,
+    get_faiss_stats,
     list_available_games,
     normalize_game_code,
     CONTENT_TYPES
@@ -32,14 +30,6 @@ class EmbedTextRequest(BaseModel):
     game_name: str
     content_type: str  # "about" or "name"
 
-class SearchRequest(BaseModel):
-    game_name: str
-    content_type: str
-    top_k: int = 10
-    # Either image_path OR text (not both)
-    image_path: Optional[str] = None
-    text: Optional[str] = None
-
 class EmbedResponse(BaseModel):
     success: bool
     faiss_index: int
@@ -47,18 +37,6 @@ class EmbedResponse(BaseModel):
     vector_dimension: int
     game_code: str
     content_type: str
-
-class SearchResult(BaseModel):
-    faiss_index: int
-    distance: float
-
-class SearchResponse(BaseModel):
-    success: bool
-    results: List[SearchResult]
-    processing_time: float
-    game_code: str
-    content_type: str
-    total_found: int
 
 class HealthResponse(BaseModel):
     message: str
@@ -162,90 +140,6 @@ async def embed_text(request: EmbedTextRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process text: {str(e)}"
-        )
-
-@router.post("/search", response_model=SearchResponse)
-async def search_similar(request: SearchRequest):
-    """
-    Search for similar vectors in specific game/content index
-    
-    Args:
-        request: Contains query (image_path OR text), game_name, content_type, top_k
-        
-    Returns:
-        SearchResponse with similar vectors and distances
-    """
-    start_time = time.time()
-    
-    try:
-        # Validate that exactly one of image_path or text is provided
-        if bool(request.image_path) == bool(request.text):
-            raise HTTPException(
-                status_code=400,
-                detail="Must provide exactly one of 'image_path' or 'text', not both or neither"
-            )
-        
-        # Validate content_type
-        if request.content_type not in CONTENT_TYPES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"content_type must be one of {CONTENT_TYPES}, got '{request.content_type}'"
-            )
-        
-        # Extract query vector
-        if request.image_path:
-            # Image search
-            if request.content_type != "images":
-                raise HTTPException(
-                    status_code=400,
-                    detail="image_path can only be used with content_type='images'"
-                )
-            
-            actual_path = validate_image_file(request.image_path)
-            query_vector = extract_image_features(actual_path)
-            
-        else:
-            # Text search
-            if request.content_type not in ["about", "name"]:
-                raise HTTPException(
-                    status_code=400,
-                    detail="text can only be used with content_type='about' or 'name'"
-                )
-            
-            validate_text_input(request.text)
-            query_vector = extract_text_features(request.text)
-        
-        # Search
-        distances, indices = search_similar_vectors(
-            query_vector, 
-            request.game_name, 
-            request.content_type, 
-            request.top_k
-        )
-        
-        # Format results
-        results = [
-            SearchResult(faiss_index=int(idx), distance=float(dist))
-            for idx, dist in zip(indices, distances)
-        ]
-        
-        processing_time = time.time() - start_time
-        
-        return SearchResponse(
-            success=True,
-            results=results,
-            processing_time=round(processing_time, 3),
-            game_code=normalize_game_code(request.game_name),
-            content_type=request.content_type,
-            total_found=len(results)
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to search: {str(e)}"
         )
 
 @router.get("/stats")

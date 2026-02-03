@@ -266,7 +266,7 @@ async def root():
             "services": {
                 "similarity_search": {
                     "description": "Image and text embedding with similarity search",
-                    "endpoints": ["/embed_image", "/embed_text", "/search", "/stats", "/games"]
+                    "endpoints": ["/embed_image", "/embed_text", "/stats", "/games"]
                 },
                 "about_extraction": {
                     "description": "Extract and synthesize about content from images using LLM (Claude/ChatGPT/Gemini)",
